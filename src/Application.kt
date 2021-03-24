@@ -2,13 +2,14 @@ package com.dartcaller
 
 import com.dartcaller.routes.ws.WsEvent
 import com.dartcaller.routes.ws.createGame
-import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.ktor.application.*
 import io.ktor.features.*
+import io.ktor.http.*
 import io.ktor.http.cio.websocket.*
 import io.ktor.request.*
+import io.ktor.response.*
 import io.ktor.routing.*
 import io.ktor.websocket.*
 import kotlinx.coroutines.flow.collect
@@ -39,22 +40,25 @@ fun Application.module(testing: Boolean = false) {
 
     routing {
         webSocket("/ws") {
-            val friendlyMapper = jacksonObjectMapper()
-            friendlyMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
-            val strictMapper = jacksonObjectMapper()
+            val mapper = jacksonObjectMapper()
             try {
             incoming.consumeAsFlow()
                 .mapNotNull { it as? Frame.Text }
                 .map { it.readText() }
-                .map { Pair(friendlyMapper.readValue<WsEvent>(it), it) }
+                .map { Pair(mapper.readValue<WsEvent>(it), it) }
                 .collect { (data, raw) ->
                     when (data.type) {
-                        "CreateGame" -> createGame(strictMapper.readValue(raw))
+                        "CreateGame" -> createGame(mapper.readValue(raw), this)
                     }
                 }
             } catch (e: Exception) {
                 println(e.localizedMessage)
             }
+        }
+
+        post("/game/throw") {
+            ActiveGamesHandlerSingleton.addScore(call.receiveText())
+            call.respond(HttpStatusCode.OK)
         }
     }
 }
