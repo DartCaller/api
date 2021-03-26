@@ -14,7 +14,7 @@ class Database {
             val (dbUrl, username, password) = this.destructDatabaseUrl(System.getenv("DATABASE_URL"))
             database = Database.connect(dbUrl, driver = "org.postgresql.Driver", user = username, password = password)
             transaction {
-                SchemaUtils.create (Games, Players, Scores, GamePlayers, GameScores)
+                SchemaUtils.create (Games, Players, Scores, Legs, GamePlayers, LegPlayers)
             }
         }
     }

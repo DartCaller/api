@@ -31,7 +31,7 @@ fun Application.module(testing: Boolean = false) {
         filter { call -> call.request.path().startsWith("/") }
     }
 
-    install(io.ktor.websocket.WebSockets) {
+    install(WebSockets) {
         pingPeriod = Duration.ofSeconds(15)
         timeout = Duration.ofSeconds(15)
         maxFrameSize = Long.MAX_VALUE

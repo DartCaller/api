@@ -1,22 +1,33 @@
 package com.dartcaller.routes.ws
 
 import com.dartcaller.ActiveGamesHandlerSingleton
-import com.dartcaller.dataController.GameController
-import com.dartcaller.dataController.PlayerController
-import com.dartcaller.dataController.ScoreController
+import com.dartcaller.dataClasses.*
+import com.dartcaller.dataController.*
 import io.ktor.http.cio.websocket.*
+import org.jetbrains.exposed.sql.transactions.transaction
+import java.util.*
 
 class GameCreateEvent(
     val players: List<String>, val gameMode: String
 ) : WsEvent("GameEvent")
 
 suspend fun createGame(event: GameCreateEvent, socket: DefaultWebSocketSession) {
-    val players = event.players.map { PlayerController.create(it) }
-    val scores = players.map { ScoreController.create(it, "501") }
+    val game = transaction {
+        val startScore = 501
 
-    val newGame = GameController.create(event.gameMode, players, scores)
-    socket.outgoing.send(Frame.Text(newGame.toJson()))
-
-    ActiveGamesHandlerSingleton.add(newGame)
-    ActiveGamesHandlerSingleton.subscribe(socket, newGame.id.toString())
+        val playerEntities = event.players.map { PlayerController.create(it) }
+        val newGameEntity = GameController.create("proto", event.gameMode)
+        val newLegEntity = LegController.create(newGameEntity.id, 0, "running", 0, 0, startScore)
+        playerEntities.forEachIndexed { index, playerEntity ->
+            GamePlayerController.create(newGameEntity.id, playerEntity.id)
+            LegPlayerController.create(newLegEntity.id, playerEntity.id, index)
+        }
+        val legPlayerOrder = playerEntities.map { it.id }
+        val legPlayerScores = playerEntities.map { it.id to mutableListOf<ScoreEntity>() }.toMap()
+        val newLeg = Leg(newLegEntity, legPlayerOrder, legPlayerScores)
+        return@transaction Game(newGameEntity, playerEntities, mutableListOf(newLeg))
+    }
+    socket.outgoing.send(Frame.Text(game.toJson()))
+    ActiveGamesHandlerSingleton.add(game)
+    ActiveGamesHandlerSingleton.subscribe(socket, game.gameEntity.id.toString())
 }

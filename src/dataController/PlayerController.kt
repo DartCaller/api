@@ -1,18 +1,14 @@
 package com.dartcaller.dataController
 
 import com.dartcaller.dataClasses.Player
-import org.jetbrains.exposed.sql.transactions.transaction
+import com.dartcaller.dataClasses.Players
+import org.jetbrains.exposed.sql.insertAndGetId
 
 object PlayerController {
-    fun getAll(): List<Player> {
-        return transaction {
-            Player.all().toList()
-        }
-    }
-
     fun create(name: String): Player {
-        return transaction {
-            Player.new { this.name = name }
+        val newPlayerID = Players.insertAndGetId {
+            it[Players.name] = name
         }
+        return Player(newPlayerID.value, name)
     }
 }
