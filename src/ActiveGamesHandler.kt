@@ -1,0 +1,34 @@
+package com.dartcaller
+
+import com.dartcaller.dataClasses.Game
+import io.ktor.http.cio.websocket.*
+
+object ActiveGamesHandlerSingleton {
+    var games = mutableMapOf<String, Game>()
+    var subscribers = mutableMapOf<String, MutableList<DefaultWebSocketSession>>().withDefault { mutableListOf() }
+
+    fun add(game: Game) {
+        this.games[game.gameEntity.id.toString()] = game
+    }
+
+    fun subscribe(socket: DefaultWebSocketSession, gameId: String) {
+        val subscriberList = this.subscribers.getValue(gameId)
+        subscriberList.add(socket)
+        this.subscribers[gameId] = subscriberList
+    }
+
+    private suspend fun updateSubscribers(game: Game) {
+        val gameSubscribers = this.subscribers.getValue(game.gameEntity.id.toString())
+        gameSubscribers.forEach {
+            val state = game.toJson()
+            it.outgoing.send(Frame.Text(state))
+        }
+    }
+
+    suspend fun addScore(scoreString: String) {
+        games.values.forEach {
+            it.addThrow(scoreString)
+            updateSubscribers(it)
+        }
+    }
+}
