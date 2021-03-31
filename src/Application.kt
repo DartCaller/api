@@ -18,13 +18,17 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import org.slf4j.event.Level
 import java.time.Duration
+import javax.sql.DataSource
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
 @Suppress("unused") // Referenced in application.conf
 @kotlin.jvm.JvmOverloads
-fun Application.module(testing: Boolean = false) {
-    Database()
+fun Application.module(testing: Boolean = false, dataSource: DataSource?) {
+    when {
+        testing -> Database(dataSource)
+        !testing -> Database()
+    }
 
     install(CallLogging) {
         level = Level.INFO
