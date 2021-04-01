@@ -1,9 +1,7 @@
-package com.dartcaller
+package com.dartcaller.routes.ws
 
 import io.ktor.http.cio.websocket.*
 import java.util.concurrent.atomic.AtomicInteger
-
-data class WsEvent(val type: String, val data: Any)
 
 class Connection(val session: DefaultWebSocketSession) {
     companion object {
