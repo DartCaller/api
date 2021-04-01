@@ -82,30 +82,27 @@ class ApplicationTest {
                 )
                 var lastGameState = parseIncomingWsJsonMessage<GameState>(incoming)
 
-                for (i in 1..25) {
+                val scores = MutableList(25) { "D20" }
+                scores.addAll(listOf("S19", "S1"))
+                scores.map {
                     handleRequest(HttpMethod.Post, "/game/throw") {
-                        setBody("D20")
+                        setBody(it)
                     }.apply {
                         assertEquals(HttpStatusCode.OK, response.status())
                         lastGameState = parseIncomingWsJsonMessage(incoming)
                     }
                 }
 
-                lastGameState.scores[lastGameState.playerOrder[0]]!!.apply {
-                    assertEquals(6, size)
-                    assertEquals("501", this[0])
+                listOf(
+                    Pair(lastGameState.currentPlayer, "-0-0-0"),
+                    Pair(lastGameState.playerOrder[1], "S19-0-0")
+                ).map {
+                    assertEquals(6, lastGameState.scores[it.first]!!.size)
+                    assertEquals("501", lastGameState.scores[it.first]!![0])
                     for (i in 1..4) {
-                        assertEquals("D20".repeat(3), this[i])
+                        assertEquals("D20".repeat(3), lastGameState.scores[it.first]!![i])
                     }
-                    assertEquals("---", this[5])
-                }
-
-                lastGameState.scores[lastGameState.currentPlayer]!!.apply {
-                    assertEquals(5, size)
-                    assertEquals("501", this[0])
-                    for (i in 1..4) {
-                        assertEquals("D20".repeat(3), this[i])
-                    }
+                    assertEquals(it.second, lastGameState.scores[it.first]!![5])
                 }
             }
         }

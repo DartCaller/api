@@ -17,21 +17,26 @@ class ScoreEntity(
     val leg: UUID,
     val player: UUID,
     val roundIndex: Int,
-    var scoreString: String
+    scoreString: String
 ) {
-    var score = convertScoreStringToScore(scoreString)
-    var thrownDarts = 1
+    var score = 0
+    var thrownDarts = 0
+    var scoreString = ""
+
+    init {
+        addScore(scoreString)
+    }
 
     companion object {
         fun convertScoreStringToScore(scoreString: String): Int {
             val dartRingIndicator = scoreString[0]
             val dartField = scoreString.substring(1).toInt()
-            val multiplier = when (dartRingIndicator) {
+            return when (dartRingIndicator) {
                 'T' -> dartField * 3
                 'D' -> dartField * 2
-                else -> dartField
+                'S' -> dartField
+                else -> 0
             }
-            return multiplier * dartField
         }
     }
 
@@ -39,8 +44,13 @@ class ScoreEntity(
         if (thrownDarts < 3) {
             val newScore = convertScoreStringToScore(newScoreString)
             score += newScore
-            scoreString += newScoreString
-            thrownDarts += 1
+            if (newScoreString == "-0") {
+                scoreString += "-0".repeat(3 - thrownDarts)
+                thrownDarts = 3
+            } else {
+                scoreString += newScoreString
+                thrownDarts += 1
+            }
         } else {
             throw IllegalStateException("Cannot add score when 3 darts were already thrown")
         }

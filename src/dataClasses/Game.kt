@@ -32,25 +32,39 @@ class Game (
     val legs: List<Leg> = legEntities.sortedBy { it.legEntity.legIndex }
     val currentLeg: Leg = legs.last()
 
-    fun addThrow(scoreString: String) {
+    fun addThrow(uncheckedScoreString: String) {
         val currentPlayerID = currentLeg.getCurrentPlayerID()
         val currentPlayerScores = currentLeg.scores[currentPlayerID]!!
+
+        val totalThrownScore = if (currentPlayerScores.size > 0) {
+            currentPlayerScores.map { it.score }.reduce { acc, nextScore -> acc + nextScore }
+        } else 0
+        val remainingScore = currentLeg.legEntity.startScore - totalThrownScore
+        val potentialNewScore = remainingScore - ScoreEntity.convertScoreStringToScore(uncheckedScoreString)
+        val approvedScoreString: String = if (potentialNewScore < 0 || potentialNewScore == 1) {
+            "-0"
+        } else if (potentialNewScore == 0 && uncheckedScoreString[0] != 'D') {
+            "-0"
+        } else {
+            uncheckedScoreString
+        }
+
         if (currentPlayerScores.isNotEmpty() &&
             currentPlayerScores.last().roundIndex == currentLeg.legEntity.currentRoundIndex) {
             val currentRoundScore = currentPlayerScores.last()
-            currentRoundScore.addScore(scoreString)
-
-            if (currentRoundScore.thrownDarts == 3) {
-                nextTurn()
-            }
+            currentRoundScore.addScore(approvedScoreString)
         } else {
             currentPlayerScores.add(ScoreEntity(
                 gameEntity.id,
                 currentLeg.legEntity.id,
                 currentPlayerID,
                 currentLeg.legEntity.currentRoundIndex,
-                scoreString
+                approvedScoreString
             ))
+        }
+
+        if (currentPlayerScores.last().thrownDarts == 3) {
+            nextTurn()
         }
     }
 
