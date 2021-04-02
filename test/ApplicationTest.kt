@@ -95,7 +95,7 @@ class ApplicationTest {
 
                 listOf(
                     Pair(lastGameState.currentPlayer, "-0-0-0"),
-                    Pair(lastGameState.playerOrder[1], "S19-0-0")
+                    Pair(lastGameState.playerOrder[1], "-0-0-0")
                 ).map {
                     assertEquals(6, lastGameState.scores[it.first]!!.size)
                     assertEquals("501", lastGameState.scores[it.first]!![0])

@@ -45,7 +45,7 @@ class ScoreEntity(
             val newScore = convertScoreStringToScore(newScoreString)
             score += newScore
             if (newScoreString == "-0") {
-                scoreString += "-0".repeat(3 - thrownDarts)
+                scoreString = "-0".repeat(3)
                 thrownDarts = 3
             } else {
                 scoreString += newScoreString
