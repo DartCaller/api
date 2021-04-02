@@ -17,6 +17,8 @@ class GameEntity (
 )
 
 class GameState (
+    val gameID: String,
+    val legID: String,
     val playerNames: Map<String, String>,
     val currentPlayer: String,
     val scores: Map<String, List<String>>,
@@ -80,6 +82,8 @@ class Game (
     fun toJson(): String {
         val serializableState = transaction {
             GameState(
+                gameEntity.id.toString(),
+                currentLeg.legEntity.id.toString(),
                 players.entries.associate { it.key to it.value.name },
                 currentLeg.getCurrentPlayerID().toString(),
                 currentLeg.scores.entries.associate {
