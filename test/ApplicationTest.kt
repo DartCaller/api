@@ -17,7 +17,7 @@ class ApplicationTest {
     private val embeddedPostgres: EmbeddedPostgres = EmbeddedPostgres.start()
     private val dataSource: DataSource = embeddedPostgres.postgresDatabase
 
-//    @Test
+    @Test
     fun testGameCreation() {
         withTestApplication({ module(testing = true, dataSource = dataSource) }) {
             handleWebSocketConversation("ws") { incoming, outgoing ->
@@ -40,7 +40,7 @@ class ApplicationTest {
         }
     }
 
-//    @Test
+    @Test
     fun testDartThrowAddition() {
         withTestApplication({ module(testing = true, dataSource = dataSource) }) {
             handleWebSocketConversation("ws") { incoming, outgoing ->
