@@ -47,26 +47,28 @@ class ApplicationTest {
                 outgoing.send(
                     Frame.Text("{ \"players\": [\"Dave\", \"Bob\"], \"gameMode\": \"501\", \"type\": \"CreateGame\" }")
                 )
-                val initGameState = parseIncomingWsJsonMessage<GameState>(incoming)
-                initGameState.scores.values.map {
+                var lastGameState = parseIncomingWsJsonMessage<GameState>(incoming)
+                lastGameState.scores.values.map {
                     assertEquals(1, it.size)
                     assertEquals("501", it[0])
                 }
 
-                handleRequest(HttpMethod.Post, "/game/throw") {
-                    setBody("T20")
-                }.apply {
-                    assertEquals(HttpStatusCode.OK, response.status())
+                listOf("T20", "S0").map {
+                    handleRequest(HttpMethod.Post, "/game/throw") {
+                        setBody(it)
+                    }.apply {
+                        assertEquals(HttpStatusCode.OK, response.status())
+                        lastGameState = parseIncomingWsJsonMessage(incoming)
+                    }
                 }
 
-                val updatedScoreGameState = parseIncomingWsJsonMessage<GameState>(incoming)
-                updatedScoreGameState.scores[updatedScoreGameState.currentPlayer]!!.apply {
+                lastGameState.scores[lastGameState.currentPlayer]!!.apply {
                     assertEquals(2, size)
                     assertEquals("501", this[0])
-                    assertEquals("T20", this[1])
+                    assertEquals("T20S0", this[1])
                 }
 
-                updatedScoreGameState.scores[updatedScoreGameState.playerOrder[1]]!!.apply {
+                lastGameState.scores[lastGameState.playerOrder[1]]!!.apply {
                     assertEquals(1, size)
                 }
             }
