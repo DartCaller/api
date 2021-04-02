@@ -4,6 +4,7 @@ import com.dartcaller.dataClasses.Game
 import com.dartcaller.routes.ws.Connection
 import io.ktor.http.cio.websocket.*
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
+import java.util.concurrent.CancellationException
 
 object ActiveGamesHandlerSingleton {
     var games = mutableMapOf<String, Game>()
@@ -15,8 +16,10 @@ object ActiveGamesHandlerSingleton {
 
     fun subscribe(socket: DefaultWebSocketSession, gameId: String) {
         val subscriberList = this.subscribers.getValue(gameId)
-        subscriberList.add(Connection(socket))
+        val connection = Connection(socket)
+        subscriberList.add(connection)
         this.subscribers[gameId] = subscriberList
+        println("Subscribed socket ${connection.name}")
     }
 
     private fun unsubscribe(socket: Connection, gameId: String? = null) {
@@ -25,13 +28,16 @@ object ActiveGamesHandlerSingleton {
             val subscriberList = this.subscribers.getValue(it)
             subscriberList.removeAll { sub -> sub.name == socket.name }
         }
+        println("Unsubscribed socket ${socket.name}")
     }
 
     private suspend fun updateSubscribers(game: Game) {
         val gameSubscribers = this.subscribers.getValue(game.gameEntity.id.toString())
-        gameSubscribers.forEach {
-            val state = game.toJson()
-            sendToSubscriber(it, Frame.Text(state))
+        with(gameSubscribers.toMutableList()) {
+            forEach {
+                val state = game.toJson()
+                sendToSubscriber(it, Frame.Text(state))
+            }
         }
     }
 
@@ -39,6 +45,8 @@ object ActiveGamesHandlerSingleton {
         try {
             socket.session.outgoing.send(frame)
         } catch (e: ClosedReceiveChannelException) {
+            unsubscribe(socket)
+        } catch (e: CancellationException) {
             unsubscribe(socket)
         } catch (e: Throwable) {
             e.printStackTrace()
