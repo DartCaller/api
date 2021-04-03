@@ -48,23 +48,17 @@ class ApplicationTest {
                 outgoing.send(
                     Frame.Text("{ \"players\": [\"Dave\", \"Bob\"], \"gameMode\": \"501\", \"type\": \"CreateGame\" }")
                 )
-                var lastGameState = parseIncomingWsJsonMessage<GameState>(incoming)
-                lastGameState.scores.values.map {
-                    assertEquals(1, it.size)
-                    assertEquals("501", it[0])
-                }
+                parseIncomingWsJsonMessage<GameState>(incoming)
 
-                lastGameState = postScores(testApplicationEngine, incoming, listOf("T20", "S0"))
+                val lastGameState = postScores(testApplicationEngine, incoming, listOf("T20", "S0"))
 
-                lastGameState.scores[lastGameState.currentPlayer]!!.apply {
-                    assertEquals(2, size)
-                    assertEquals("501", this[0])
-                    assertEquals("T20S0", this[1])
-                }
-
-                lastGameState.scores[lastGameState.playerOrder[1]]!!.apply {
-                    assertEquals(1, size)
-                }
+                assertScores(
+                    lastGameState.scores,
+                    mapOf(
+                        lastGameState.currentPlayer to listOf("501", "T20S0"),
+                        lastGameState.playerOrder[1] to listOf("501")
+                    )
+                )
             }
         }
     }
@@ -80,17 +74,15 @@ class ApplicationTest {
                 parseIncomingWsJsonMessage<GameState>(incoming)
                 val lastGameState = postScores(testApplicationEngine, incoming, mergeLists(Array(25) { "D20" }, arrayOf("S19", "S1")))
 
-                listOf(
-                    Pair(lastGameState.currentPlayer, "-0-0-0"),
-                    Pair(lastGameState.playerOrder[1], "-0-0-0")
-                ).map {
-                    assertEquals(6, lastGameState.scores[it.first]!!.size)
-                    assertEquals("501", lastGameState.scores[it.first]!![0])
-                    for (i in 1..4) {
-                        assertEquals("D20".repeat(3), lastGameState.scores[it.first]!![i])
-                    }
-                    assertEquals(it.second, lastGameState.scores[it.first]!![5])
-                }
+
+                val expectedScore = listOf("501", "D20D20D20", "D20D20D20", "D20D20D20", "D20D20D20", "-0-0-0")
+                assertScores(
+                    lastGameState.scores,
+                    mapOf(
+                        lastGameState.currentPlayer to expectedScore,
+                        lastGameState.playerOrder[1] to expectedScore
+                    )
+                )
             }
         }
     }
@@ -108,26 +100,25 @@ class ApplicationTest {
                 val scores = mergeLists((Array(12) { "T20" }), arrayOf("T20", "T19", "D12", "T20", "T20", "T7", "T20", "T19", "D12"))
                 val lastGameState = postScores(testApplicationEngine, incoming, scores)
 
-                lastGameState.currentPlayer.apply {
-                    assertEquals(4, lastGameState.scores[this]!!.size)
-                    assertEquals("501", lastGameState.scores[this]!![0])
-                    for (i in 1..2) {
-                        assertEquals("T20".repeat(3), lastGameState.scores[this]!![i])
-                    }
-                    assertEquals("T20T19D12", lastGameState.scores[this]!![3])
-                    assertEquals(true, lastGameState.legFinished)
-                }
+                assertScores(
+                    lastGameState.scores,
+                    mapOf(
+                        lastGameState.currentPlayer to listOf("501", "T20T20T20", "T20T20T20", "T20T19D12"),
+                        lastGameState.playerOrder[1] to listOf("501", "T20T20T20", "T20T20T20", "-0-0-0", "T20T19D12")
+                    )
+                )
+                assertEquals(true, lastGameState.legFinished)
+            }
+        }
+    }
 
-                lastGameState.playerOrder[1].apply {
-                    assertEquals(5, lastGameState.scores[this]!!.size)
-                    assertEquals("501", lastGameState.scores[this]!![0])
-                    for (i in 1..2) {
-                        assertEquals("T20".repeat(3), lastGameState.scores[this]!![i])
-                    }
-                    assertEquals("-0-0-0", lastGameState.scores[this]!![3])
-                    assertEquals("T20T19D12", lastGameState.scores[this]!![4])
-                    assertEquals(true, lastGameState.legFinished)
-                }
+    private fun assertScores(scores: Map<String, List<String>>, expectedScores: Map<String, List<String>>) {
+        expectedScores.forEach {
+            val playerScore = scores.getValue(it.key)
+            val expectedScore = it.value
+            assertEquals(expectedScore.size ,playerScore.size, "$playerScore and $expectedScore must be of same size")
+            playerScore.zip(expectedScore).map { (realScore, expectedScore) ->
+                assertEquals(expectedScore, realScore, "$playerScore and $expectedScore don't match for player ${it.key}")
             }
         }
     }
