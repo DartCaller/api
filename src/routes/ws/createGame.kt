@@ -27,7 +27,7 @@ suspend fun createGame(event: GameCreateEvent, socket: DefaultWebSocketSession) 
         val newLeg = Leg(newLegEntity, legPlayerOrder, legPlayerScores)
         return@transaction Game(newGameEntity, playerEntities, mutableListOf(newLeg))
     }
-    socket.outgoing.send(Frame.Text(game.toJson()))
     ActiveGamesHandlerSingleton.add(game)
     ActiveGamesHandlerSingleton.subscribe(socket, game.gameEntity.id.toString())
+    socket.outgoing.send(Frame.Text(game.toJson()))
 }
