@@ -47,6 +47,7 @@ class ScoreEntity(
             if (newScoreString == "-0") {
                 scoreString = "-0".repeat(3)
                 thrownDarts = 3
+                score = 0
             } else {
                 scoreString += newScoreString
                 thrownDarts += 1

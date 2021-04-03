@@ -71,12 +71,25 @@ class Game (
         }
     }
 
-    private fun nextTurn() {
+    private fun nextTurn(alreadySkippedTurns: Int = 0) {
         if (currentLeg.legEntity.currentPlayerTurnIndex + 1 == players.values.size) {
             currentLeg.legEntity.currentPlayerTurnIndex = 0
             currentLeg.legEntity.currentRoundIndex ++
         } else {
             currentLeg.legEntity.currentPlayerTurnIndex ++
+        }
+
+        if (currentLeg.scores[currentLeg.getCurrentPlayerID()]!!.size > 0) {
+            val totalThrownScore = currentLeg.scores[currentLeg.getCurrentPlayerID()]!!
+                .map { it.score }.reduce { acc, nextScore -> acc + nextScore }
+            if (totalThrownScore == currentLeg.legEntity.startScore) {
+                if (alreadySkippedTurns < players.values.size) {
+                    nextTurn(alreadySkippedTurns+1)
+                } else {
+                    // All players have 0, game has ended
+                    currentLeg.legEntity.finished = true
+                }
+            }
         }
     }
 
