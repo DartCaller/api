@@ -8,11 +8,13 @@ import io.ktor.http.cio.websocket.*
 import io.ktor.server.testing.*
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres
 import kotlinx.coroutines.channels.ReceiveChannel
+import org.junit.jupiter.api.AfterAll
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestInstance
 import javax.sql.DataSource
-import kotlin.test.AfterTest
-import kotlin.test.Test
 import kotlin.test.assertEquals
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class ApplicationTest {
     private val embeddedPostgres: EmbeddedPostgres = EmbeddedPostgres.start()
     private val dataSource: DataSource = embeddedPostgres.postgresDatabase
@@ -141,7 +143,7 @@ class ApplicationTest {
         return lastGameState!!
     }
 
-    @AfterTest
+    @AfterAll
     fun shutdown () {
         embeddedPostgres.close()
     }
