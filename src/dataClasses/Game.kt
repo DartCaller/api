@@ -19,6 +19,7 @@ class GameEntity (
 class GameState (
     val gameID: String,
     val legID: String,
+    val legFinished: Boolean,
     val playerNames: Map<String, String>,
     val currentPlayer: String,
     val scores: Map<String, List<String>>,
@@ -84,6 +85,7 @@ class Game (
             GameState(
                 gameEntity.id.toString(),
                 currentLeg.legEntity.id.toString(),
+                currentLeg.legEntity.finished,
                 players.entries.associate { it.key to it.value.name },
                 currentLeg.getCurrentPlayerID().toString(),
                 currentLeg.scores.entries.associate {

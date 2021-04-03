@@ -6,11 +6,11 @@ import org.jetbrains.exposed.sql.insertAndGetId
 import java.util.*
 
 object LegController {
-    fun create(gameID: UUID, legIndex: Int, state: String, currentPlayerTurnIndex: Int, currentRoundIndex: Int, startScore: Int): LegEntity {
+    fun create(gameID: UUID, legIndex: Int, finished: Boolean, currentPlayerTurnIndex: Int, currentRoundIndex: Int, startScore: Int): LegEntity {
         val legID = Legs.insertAndGetId {
             it[this.game] = gameID
             it[this.legIndex] = legIndex
-            it[this.state] = state
+            it[this.finished] = finished
             it[this.currentPlayerTurnIndex] = currentPlayerTurnIndex
             it[this.currentRoundIndex] = currentRoundIndex
             it[this.startScore] = startScore
@@ -19,7 +19,7 @@ object LegController {
             legID,
             gameID,
             legIndex,
-            state,
+            finished,
             currentPlayerTurnIndex,
             currentRoundIndex,
             startScore

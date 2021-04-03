@@ -110,6 +110,50 @@ class ApplicationTest {
         }
     }
 
+    @Test
+    fun gameEnds() {
+        withTestApplication({ module(testing = true, dataSource = dataSource) }) {
+            handleWebSocketConversation("ws") { incoming, outgoing ->
+                outgoing.send(
+                    Frame.Text("{ \"players\": [\"Dave\", \"Bob\"], \"gameMode\": \"501\", \"type\": \"CreateGame\" }")
+                )
+                var lastGameState = parseIncomingWsJsonMessage<GameState>(incoming)
+
+                val scores = MutableList(12) { "T20" }
+                scores.addAll(listOf("T20", "T19", "D12", "T20", "T20", "T7", "T20", "T19", "D12"))
+                scores.map {
+                    handleRequest(HttpMethod.Post, "/game/throw") {
+                        setBody(it)
+                    }.apply {
+                        assertEquals(HttpStatusCode.OK, response.status())
+                        lastGameState = parseIncomingWsJsonMessage(incoming)
+                    }
+                }
+
+                lastGameState.currentPlayer.apply {
+                    assertEquals(4, lastGameState.scores[this]!!.size)
+                    assertEquals("501", lastGameState.scores[this]!![0])
+                    for (i in 1..2) {
+                        assertEquals("T20".repeat(3), lastGameState.scores[this]!![i])
+                    }
+                    assertEquals("T20T19D12", lastGameState.scores[this]!![3])
+                    assertEquals(true, lastGameState.legFinished)
+                }
+
+                lastGameState.playerOrder[1].apply {
+                    assertEquals(5, lastGameState.scores[this]!!.size)
+                    assertEquals("501", lastGameState.scores[this]!![0])
+                    for (i in 1..2) {
+                        assertEquals("T20".repeat(3), lastGameState.scores[this]!![i])
+                    }
+                    assertEquals("-0-0-0", lastGameState.scores[this]!![3])
+                    assertEquals("T20T19D12", lastGameState.scores[this]!![4])
+                    assertEquals(true, lastGameState.legFinished)
+                }
+            }
+        }
+    }
+
     private suspend inline fun <reified T>parseIncomingWsJsonMessage(receiveChannel: ReceiveChannel<Frame>) : T {
         return jacksonObjectMapper().readValue<T>((receiveChannel.receive() as Frame.Text).readText())
     }
