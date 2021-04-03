@@ -78,10 +78,7 @@ class ApplicationTest {
                     Frame.Text("{ \"players\": [\"Dave\", \"Bob\"], \"gameMode\": \"501\", \"type\": \"CreateGame\" }")
                 )
                 parseIncomingWsJsonMessage<GameState>(incoming)
-
-                val scores = MutableList(25) { "D20" }
-                scores.addAll(listOf("S19", "S1"))
-                val lastGameState = postScores(testApplicationEngine, incoming, scores)
+                val lastGameState = postScores(testApplicationEngine, incoming, mergeLists(Array(25) { "D20" }, arrayOf("S19", "S1")))
 
                 listOf(
                     Pair(lastGameState.currentPlayer, "-0-0-0"),
@@ -108,8 +105,7 @@ class ApplicationTest {
                 )
                 parseIncomingWsJsonMessage<GameState>(incoming)
 
-                val scores = MutableList(12) { "T20" }
-                scores.addAll(listOf("T20", "T19", "D12", "T20", "T20", "T7", "T20", "T19", "D12"))
+                val scores = mergeLists((Array(12) { "T20" }), arrayOf("T20", "T19", "D12", "T20", "T20", "T7", "T20", "T19", "D12"))
                 val lastGameState = postScores(testApplicationEngine, incoming, scores)
 
                 lastGameState.currentPlayer.apply {
@@ -134,6 +130,10 @@ class ApplicationTest {
                 }
             }
         }
+    }
+
+    private inline fun <reified T> mergeLists(vararg items: Array<T>): List<T> {
+        return items.flatten()
     }
 
     private suspend inline fun <reified T>parseIncomingWsJsonMessage(receiveChannel: ReceiveChannel<Frame>) : T {
