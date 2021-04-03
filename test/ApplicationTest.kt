@@ -21,9 +21,8 @@ class ApplicationTest {
     fun testGameCreation() {
         withTestApplication({ module(testing = true, dataSource = dataSource) }) {
             handleWebSocketConversation("ws") { incoming, outgoing ->
-                outgoing.send(
-                    Frame.Text("{ \"players\": [\"Dave\", \"Bob\"], \"gameMode\": \"501\", \"type\": \"CreateGame\" }")
-                )
+                outgoing.send(buildCreateGameEvent(listOf("Dave", "Bob"), "501"))
+
                 val answer = parseIncomingWsJsonMessage<GameState>(incoming)
 
                 assertEquals("Dave", answer.playerNames[answer.currentPlayer])
@@ -45,9 +44,7 @@ class ApplicationTest {
         withTestApplication({ module(testing = true, dataSource = dataSource) }) {
             val testApplicationEngine = this
             handleWebSocketConversation("ws") { incoming, outgoing ->
-                outgoing.send(
-                    Frame.Text("{ \"players\": [\"Dave\", \"Bob\"], \"gameMode\": \"501\", \"type\": \"CreateGame\" }")
-                )
+                outgoing.send(buildCreateGameEvent(listOf("Dave", "Bob"), "501"))
                 parseIncomingWsJsonMessage<GameState>(incoming)
 
                 val lastGameState = postScores(testApplicationEngine, incoming, listOf("T20", "S0"))
@@ -68,9 +65,7 @@ class ApplicationTest {
         withTestApplication({ module(testing = true, dataSource = dataSource) }) {
             val testApplicationEngine = this
             handleWebSocketConversation("ws") { incoming, outgoing ->
-                outgoing.send(
-                    Frame.Text("{ \"players\": [\"Dave\", \"Bob\"], \"gameMode\": \"501\", \"type\": \"CreateGame\" }")
-                )
+                outgoing.send(buildCreateGameEvent(listOf("Dave", "Bob"), "501"))
                 parseIncomingWsJsonMessage<GameState>(incoming)
                 val lastGameState = postScores(testApplicationEngine, incoming, mergeLists(Array(25) { "D20" }, arrayOf("S19", "S1")))
 
@@ -92,9 +87,7 @@ class ApplicationTest {
         withTestApplication({ module(testing = true, dataSource = dataSource) }) {
             val testApplicationEngine = this
             handleWebSocketConversation("ws") { incoming, outgoing ->
-                outgoing.send(
-                    Frame.Text("{ \"players\": [\"Dave\", \"Bob\"], \"gameMode\": \"501\", \"type\": \"CreateGame\" }")
-                )
+                outgoing.send(buildCreateGameEvent(listOf("Dave", "Bob"), "501"))
                 parseIncomingWsJsonMessage<GameState>(incoming)
 
                 val scores = mergeLists((Array(12) { "T20" }), arrayOf("T20", "T19", "D12", "T20", "T20", "T7", "T20", "T19", "D12"))
@@ -121,6 +114,10 @@ class ApplicationTest {
                 assertEquals(expectedScore, realScore, "$playerScore and $expectedScore don't match for player ${it.key}")
             }
         }
+    }
+
+    private fun buildCreateGameEvent(players: List<String>, gameMode: String) : Frame {
+        return Frame.Text("{ 'players': ${players.map {"'$it'"} }, 'gameMode': '$gameMode', 'type': 'CreateGame' }".replace("'", "\""))
     }
 
     private inline fun <reified T> mergeLists(vararg items: Array<T>): List<T> {
