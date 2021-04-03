@@ -43,6 +43,7 @@ class ApplicationTest {
     @Test
     fun testDartThrowAddition() {
         withTestApplication({ module(testing = true, dataSource = dataSource) }) {
+            val testApplicationEngine = this
             handleWebSocketConversation("ws") { incoming, outgoing ->
                 outgoing.send(
                     Frame.Text("{ \"players\": [\"Dave\", \"Bob\"], \"gameMode\": \"501\", \"type\": \"CreateGame\" }")
@@ -53,14 +54,7 @@ class ApplicationTest {
                     assertEquals("501", it[0])
                 }
 
-                listOf("T20", "S0").map {
-                    handleRequest(HttpMethod.Post, "/game/throw") {
-                        setBody(it)
-                    }.apply {
-                        assertEquals(HttpStatusCode.OK, response.status())
-                        lastGameState = parseIncomingWsJsonMessage(incoming)
-                    }
-                }
+                lastGameState = postScores(testApplicationEngine, incoming, listOf("T20", "S0"))
 
                 lastGameState.scores[lastGameState.currentPlayer]!!.apply {
                     assertEquals(2, size)
@@ -78,22 +72,16 @@ class ApplicationTest {
     @Test
     fun scoreDoesntGoBelowZero() {
         withTestApplication({ module(testing = true, dataSource = dataSource) }) {
+            val testApplicationEngine = this
             handleWebSocketConversation("ws") { incoming, outgoing ->
                 outgoing.send(
                     Frame.Text("{ \"players\": [\"Dave\", \"Bob\"], \"gameMode\": \"501\", \"type\": \"CreateGame\" }")
                 )
-                var lastGameState = parseIncomingWsJsonMessage<GameState>(incoming)
+                parseIncomingWsJsonMessage<GameState>(incoming)
 
                 val scores = MutableList(25) { "D20" }
                 scores.addAll(listOf("S19", "S1"))
-                scores.map {
-                    handleRequest(HttpMethod.Post, "/game/throw") {
-                        setBody(it)
-                    }.apply {
-                        assertEquals(HttpStatusCode.OK, response.status())
-                        lastGameState = parseIncomingWsJsonMessage(incoming)
-                    }
-                }
+                val lastGameState = postScores(testApplicationEngine, incoming, scores)
 
                 listOf(
                     Pair(lastGameState.currentPlayer, "-0-0-0"),
@@ -113,22 +101,16 @@ class ApplicationTest {
     @Test
     fun gameEnds() {
         withTestApplication({ module(testing = true, dataSource = dataSource) }) {
+            val testApplicationEngine = this
             handleWebSocketConversation("ws") { incoming, outgoing ->
                 outgoing.send(
                     Frame.Text("{ \"players\": [\"Dave\", \"Bob\"], \"gameMode\": \"501\", \"type\": \"CreateGame\" }")
                 )
-                var lastGameState = parseIncomingWsJsonMessage<GameState>(incoming)
+                parseIncomingWsJsonMessage<GameState>(incoming)
 
                 val scores = MutableList(12) { "T20" }
                 scores.addAll(listOf("T20", "T19", "D12", "T20", "T20", "T7", "T20", "T19", "D12"))
-                scores.map {
-                    handleRequest(HttpMethod.Post, "/game/throw") {
-                        setBody(it)
-                    }.apply {
-                        assertEquals(HttpStatusCode.OK, response.status())
-                        lastGameState = parseIncomingWsJsonMessage(incoming)
-                    }
-                }
+                val lastGameState = postScores(testApplicationEngine, incoming, scores)
 
                 lastGameState.currentPlayer.apply {
                     assertEquals(4, lastGameState.scores[this]!!.size)
@@ -155,7 +137,20 @@ class ApplicationTest {
     }
 
     private suspend inline fun <reified T>parseIncomingWsJsonMessage(receiveChannel: ReceiveChannel<Frame>) : T {
-        return jacksonObjectMapper().readValue<T>((receiveChannel.receive() as Frame.Text).readText())
+        return jacksonObjectMapper().readValue((receiveChannel.receive() as Frame.Text).readText())
+    }
+
+    private suspend fun postScores(ctx: TestApplicationEngine, receiveChannel: ReceiveChannel<Frame>, scores: List<String>): GameState {
+        if (scores.isEmpty()) throw IllegalArgumentException("ScoreList with at least one element is required")
+        var lastGameState: GameState? = null
+        scores.map {
+            ctx.handleRequest(HttpMethod.Post, "/game/throw") { setBody(it) }
+                .apply {
+                    assertEquals(HttpStatusCode.OK, response.status())
+                    lastGameState = parseIncomingWsJsonMessage(receiveChannel)
+                }
+        }
+        return lastGameState!!
     }
 
     @AfterTest
