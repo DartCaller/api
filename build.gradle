@@ -30,6 +30,10 @@ repositories {
     maven { url 'https://kotlin.bintray.com/ktor' }
 }
 
+test {
+    useJUnitPlatform()
+}
+
 dependencies {
     compile "org.postgresql:postgresql:42.2.2"
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.0.1"
