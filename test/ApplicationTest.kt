@@ -107,6 +107,43 @@ class ApplicationTest {
         }
     }
 
+    @Test
+    fun correctLastScore() {
+        withTestApplication({ module(testing = true, dataSource = dataSource) }) {
+            val testApplicationEngine = this
+            handleWebSocketConversation("ws") { incoming, outgoing ->
+                outgoing.send(buildCreateGameEvent(listOf("Dave", "Bob"), "501"))
+                parseIncomingWsJsonMessage<GameState>(incoming)
+                var lastGameState = postScores(testApplicationEngine, incoming, mergeLists(Array(12) { "T20" }, arrayOf("T20", "T19", "D6")))
+
+                val scoreCorrections = listOf(
+                    Triple(lastGameState.playerOrder[0],"T20T19D13", HttpStatusCode.Conflict),
+                    Triple(lastGameState.currentPlayer,"T20D20S20", HttpStatusCode.OK)
+                )
+
+                scoreCorrections.forEach {
+                    handleRequest(HttpMethod.Post, "/leg/${lastGameState.legID}/correctScore") {
+                        addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                        setBody(buildScoreCorrectionJson(it.first, it.second))
+                    }.apply {
+                        assertEquals(it.third, response.status())
+                        if (it.third == HttpStatusCode.OK) {
+                            lastGameState = parseIncomingWsJsonMessage(incoming)
+                        }
+                    }
+                }
+
+                assertScores(
+                    lastGameState.scores,
+                    mapOf(
+                        lastGameState.currentPlayer to listOf("501", "T20T20T20", "T20T20T20", "T20T19D6"),
+                        lastGameState.playerOrder[1] to listOf("501", "T20T20T20", "T20D20S20")
+                    )
+                )
+            }
+        }
+    }
+
     private fun assertScores(scores: Map<String, List<String>>, expectedScores: Map<String, List<String>>) {
         expectedScores.forEach {
             val playerScore = scores.getValue(it.key)
@@ -116,6 +153,11 @@ class ApplicationTest {
                 assertEquals(expectedScore, realScore, "$playerScore and $expectedScore don't match for player ${it.key}")
             }
         }
+    }
+
+    private fun buildScoreCorrectionJson(playerId: String, scoreString: String): String {
+        return "{ 'playerId': '$playerId', 'scoreString': '$scoreString' }"
+            .replace("'", "\"")
     }
 
     private fun buildCreateGameEvent(players: List<String>, gameMode: String) : Frame {
