@@ -38,21 +38,15 @@ class Game (
         val currentPlayerID = currentLeg.getCurrentPlayerID()
         val currentPlayerScores = currentLeg.scores[currentPlayerID]!!
 
-        val totalThrownScore = if (currentPlayerScores.size > 0) {
-            currentPlayerScores.map { it.score }.reduce { acc, nextScore -> acc + nextScore }
-        } else 0
-        val remainingScore = currentLeg.legEntity.startScore - totalThrownScore
-        val potentialNewScore = remainingScore - ScoreEntity.convertScoreStringToScore(uncheckedScoreString)
-        val approvedScoreString: String = if (potentialNewScore < 0 || potentialNewScore == 1) {
-            "-0"
-        } else if (potentialNewScore == 0 && uncheckedScoreString[0] != 'D') {
-            "-0"
-        } else {
-            uncheckedScoreString
-        }
+        val remainingScore = remainingScore(currentLeg.getCurrentPlayerID())
+        val approvedScoreString: String = if (
+            isNewScoreAllowed(remainingScore, uncheckedScoreString)
+        ) uncheckedScoreString else "-0"
 
-        if (currentPlayerScores.isNotEmpty() &&
-            currentPlayerScores.last().roundIndex == currentLeg.legEntity.currentRoundIndex) {
+        if (
+            currentPlayerScores.isNotEmpty() &&
+            currentPlayerScores.last().roundIndex == currentLeg.legEntity.currentRoundIndex
+        ) {
             val currentRoundScore = currentPlayerScores.last()
             currentRoundScore.addScore(approvedScoreString)
         } else {
@@ -78,17 +72,48 @@ class Game (
             currentLeg.legEntity.currentPlayerTurnIndex ++
         }
 
-        if (currentLeg.scores[currentLeg.getCurrentPlayerID()]!!.size > 0) {
-            val totalThrownScore = currentLeg.scores[currentLeg.getCurrentPlayerID()]!!
-                .map { it.score }.reduce { acc, nextScore -> acc + nextScore }
-            if (totalThrownScore == currentLeg.legEntity.startScore) {
-                if (alreadySkippedTurns < players.values.size) {
-                    nextTurn(alreadySkippedTurns+1)
+        if (0 == remainingScore(currentLeg.getCurrentPlayerID())) {
+            if (alreadySkippedTurns < players.values.size) {
+                nextTurn(alreadySkippedTurns+1)
+            } else {
+                // All players have 0, game has ended
+                currentLeg.legEntity.finished = true
+            }
+        }
+    }
+
+    fun correctScore(playerId: String, scoreString: String) {
+        val playerUUID = UUID.fromString(playerId)
+        currentLeg.scores[playerUUID]?.let { playerScores ->
+            playerScores.lastOrNull()?.let {
+                val remainingScore = remainingScore(playerUUID, (playerScores.size - 1))
+                if (isNewScoreAllowed(remainingScore, scoreString)) {
+                    it.setScore(scoreString)
                 } else {
-                    // All players have 0, game has ended
-                    currentLeg.legEntity.finished = true
+                    throw IllegalStateException("Can't update total score to < 0")
                 }
             }
+        }
+    }
+
+    private fun remainingScore(playerId: UUID, roundIndex: Int? = null): Int {
+        val playerScore = currentLeg.scores[playerId]
+        val totalThrownScore = if (playerScore!!.size > 0) {
+            playerScore
+                .map { it.score }
+                .subList(0, if (roundIndex !== null) roundIndex else playerScore.size)
+                .reduce { acc, nextScore -> acc + nextScore }
+        } else 0
+        return currentLeg.legEntity.startScore - totalThrownScore
+    }
+
+    private fun isNewScoreAllowed(remainingScore: Int, uncheckedScoreString: String): Boolean {
+        val potentialNewScore = remainingScore - ScoreEntity.convertScoreStringToScore(uncheckedScoreString)
+        return when {
+            potentialNewScore < 0 -> false
+            potentialNewScore == 1 -> false
+            (potentialNewScore == 0 && uncheckedScoreString[0] != 'D') -> false
+            else -> true
         }
     }
 
@@ -112,3 +137,8 @@ class Game (
         return jacksonObjectMapper().writeValueAsString(serializableState)
     }
 }
+
+//fun ResultRow.toGenre(): Game = Game(
+//    playerNames = this[Game.playerNames],
+//    title = this[Game.title]
+//)

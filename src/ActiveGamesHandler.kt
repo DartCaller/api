@@ -59,4 +59,14 @@ object ActiveGamesHandlerSingleton {
             updateSubscribers(it)
         }
     }
+
+    suspend fun correctScore(legID: String, scoreToCorrect: CorrectScore) {
+        for (game in games.values.iterator()) {
+            if (legID == game.currentLeg.legEntity.id.toString()) {
+                game.correctScore(scoreToCorrect.playerId, scoreToCorrect.scoreString)
+                updateSubscribers(game)
+                break
+            }
+        }
+    }
 }

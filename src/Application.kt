@@ -6,6 +6,7 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.ktor.application.*
 import io.ktor.features.*
+import io.ktor.gson.*
 import io.ktor.http.*
 import io.ktor.http.cio.websocket.*
 import io.ktor.request.*
@@ -17,8 +18,11 @@ import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import org.slf4j.event.Level
+import java.text.DateFormat
 import java.time.Duration
 import javax.sql.DataSource
+
+data class CorrectScore(val playerId: String, val scoreString: String)
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
@@ -42,6 +46,13 @@ fun Application.module(testing: Boolean = false, dataSource: DataSource? = null)
         masking = false
     }
 
+    install(ContentNegotiation) {
+        gson {
+            setDateFormat(DateFormat.LONG)
+            setPrettyPrinting()
+        }
+    }
+
     routing {
         webSocket("/ws") {
             val mapper = jacksonObjectMapper()
@@ -63,6 +74,21 @@ fun Application.module(testing: Boolean = false, dataSource: DataSource? = null)
         post("/game/throw") {
             ActiveGamesHandlerSingleton.addScore(call.receiveText())
             call.respond(HttpStatusCode.OK)
+        }
+
+        post("/leg/{legID}/correctScore") {
+            val legID = call.parameters["legID"]
+            val data = call.receive<CorrectScore>()
+            if (legID != null) {
+                try {
+                    ActiveGamesHandlerSingleton.correctScore(legID, data)
+                    call.respond(HttpStatusCode.OK)
+                } catch (e: IllegalStateException) {
+                    call.respond(HttpStatusCode.Conflict)
+                }
+            } else {
+                call.respond(HttpStatusCode.BadRequest)
+            }
         }
     }
 }
