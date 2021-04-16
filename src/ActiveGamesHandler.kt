@@ -59,10 +59,12 @@ object ActiveGamesHandlerSingleton {
         }
     }
 
-    suspend fun addScore(scoreString: String) {
+    suspend fun addScore(boardID: String, scoreString: String) {
         games.values.forEach {
-            it.addThrow(scoreString)
-            updateSubscribers(it)
+            if (it.gameEntity.autoDartReco == boardID) {
+                it.addThrow(scoreString)
+                updateSubscribers(it)
+            }
         }
     }
 

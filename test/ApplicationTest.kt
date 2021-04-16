@@ -201,7 +201,7 @@ class ApplicationTest {
         if (scores.isEmpty()) throw IllegalArgumentException("ScoreList with at least one element is required")
         var lastGameState: GameState? = null
         scores.map {
-            ctx.handleRequest(HttpMethod.Post, "/game/throw") { setBody(it) }
+            ctx.handleRequest(HttpMethod.Post, "/board/proto/throw") { setBody(it) }
                 .apply {
                     assertEquals(HttpStatusCode.OK, response.status())
                     lastGameState = parseIncomingWsJsonMessage(receiveChannel)
