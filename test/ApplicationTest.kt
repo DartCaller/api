@@ -147,7 +147,7 @@ class ApplicationTest {
                 )
 
                 scoreCorrections.forEach {
-                    handleRequest(HttpMethod.Post, "/leg/${lastGameState.legID}/correctScore") {
+                    handleRequest(HttpMethod.Post, "/game/${lastGameState.gameID}/correctScore") {
                         addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
                         setBody(buildScoreCorrectionJson(it.first, it.second))
                     }.apply {

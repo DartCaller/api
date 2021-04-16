@@ -60,9 +60,9 @@ object ActiveGamesHandlerSingleton {
         }
     }
 
-    suspend fun correctScore(legID: String, scoreToCorrect: CorrectScore) {
+    suspend fun correctScore(gameID: String, scoreToCorrect: CorrectScore) {
         for (game in games.values.iterator()) {
-            if (legID == game.currentLeg.legEntity.id.toString()) {
+            if (gameID == game.gameEntity.id.toString()) {
                 game.correctScore(scoreToCorrect.playerId, scoreToCorrect.scoreString)
                 updateSubscribers(game)
                 break

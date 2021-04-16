@@ -76,12 +76,12 @@ fun Application.module(testing: Boolean = false, dataSource: DataSource? = null)
             call.respond(HttpStatusCode.OK)
         }
 
-        post("/leg/{legID}/correctScore") {
-            val legID = call.parameters["legID"]
+        post("/game/{gameID}/correctScore") {
+            val gameID = call.parameters["gameID"]
             val data = call.receive<CorrectScore>()
-            if (legID != null) {
+            if (gameID != null) {
                 try {
-                    ActiveGamesHandlerSingleton.correctScore(legID, data)
+                    ActiveGamesHandlerSingleton.correctScore(gameID, data)
                     call.respond(HttpStatusCode.OK)
                 } catch (e: IllegalStateException) {
                     call.respond(HttpStatusCode.Conflict)
