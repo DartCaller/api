@@ -102,11 +102,13 @@ class Game (
     }
 
     private fun remainingScore(playerId: UUID, roundIndex: Int? = null): Int {
-        val playerScore = currentLeg.scores[playerId]
+        var playerScore = currentLeg.scores[playerId]
+        if (roundIndex !== null) {
+            playerScore = playerScore!!.subList(0, roundIndex)
+        }
         val totalThrownScore = if (playerScore!!.size > 0) {
             playerScore
                 .map { it.score }
-                .subList(0, if (roundIndex !== null) roundIndex else playerScore.size)
                 .reduce { acc, nextScore -> acc + nextScore }
         } else 0
         return currentLeg.legEntity.startScore - totalThrownScore
