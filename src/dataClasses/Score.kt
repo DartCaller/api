@@ -29,7 +29,7 @@ class ScoreEntity(
 
     companion object {
         fun convertScoreStringToScore(scoreString: String): Int {
-            val matches = "([SDT](?:2[0-5]|1[0-9]|[1-9]))".toRegex().findAll(scoreString)
+            val matches = "([SDT](?:\\d{1,3}))".toRegex().findAll(scoreString)
             var resultScore = 0
             matches.toList().forEach {
                 val dartRingIndicator = it.value[0]
