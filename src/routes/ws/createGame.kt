@@ -29,5 +29,4 @@ suspend fun createGame(event: GameCreateEvent, socket: DefaultWebSocketSession) 
     }
     ActiveGamesHandlerSingleton.add(game)
     ActiveGamesHandlerSingleton.subscribe(socket, game.gameEntity.id.toString())
-    socket.outgoing.send(Frame.Text(game.toJson()))
 }
