@@ -108,6 +108,31 @@ class ApplicationTest {
     }
 
     @Test
+    fun gameEnds2() {
+        withTestApplication({ module(testing = true, dataSource = dataSource) }) {
+            val testApplicationEngine = this
+            handleWebSocketConversation("ws") { incoming, outgoing ->
+                outgoing.send(buildCreateGameEvent(listOf("Dave", "Bob", "Alice", ""), "501"))
+                parseIncomingWsJsonMessage<GameState>(incoming)
+
+                val scores = mergeLists(arrayOf("D12"), Array(25) { "T20" }, arrayOf("S15", "T20", "T19", "D12", "T20", "T19", "D12", "T20", "T19", "D12", "D11", "D10"))
+                val lastGameState = postScores(testApplicationEngine, incoming, scores)
+
+                assertScores(
+                    lastGameState.scores,
+                    mapOf(
+                        lastGameState.playerOrder[0] to listOf("501", "D12T20T20", "T20T20T20", "T20T20S15", "D11D10"),
+                        lastGameState.currentPlayer to listOf("501", "T20T20T20", "T20T20T20", "T20T19D12"),
+                        lastGameState.playerOrder[2] to listOf("501", "T20T20T20", "T20T20T20", "T20T19D12"),
+                        lastGameState.playerOrder[3] to listOf("501", "T20T20T20", "T20T20T20", "T20T19D12")
+                    )
+                )
+                assertEquals(true, lastGameState.legFinished)
+            }
+        }
+    }
+
+    @Test
     fun correctLastScore() {
         withTestApplication({ module(testing = true, dataSource = dataSource) }) {
             val testApplicationEngine = this
