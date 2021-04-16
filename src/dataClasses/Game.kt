@@ -23,6 +23,7 @@ class GameState (
     val currentPlayer: String,
     val scores: Map<String, List<String>>,
     val playerOrder: List<String>,
+    val playerFinishedOrder: List<String>,
 )
 
 class Game (
@@ -59,6 +60,10 @@ class Game (
             ))
         }
 
+        if (remainingScore(currentPlayerID) == 0) {
+            currentLeg.playerFinishedOrder.add(currentPlayerID)
+            nextTurn()
+        }
         if (currentPlayerScores.last().thrownDarts == 3) {
             nextTurn()
         }
@@ -131,7 +136,8 @@ class Game (
                         it.value.map { score -> score.scoreString }
                     )
                 },
-                currentLeg.playerOrder.map { it.toString() }
+                currentLeg.playerOrder.map { it.toString() },
+                currentLeg.playerFinishedOrder.map { it.toString() }
             )
         }
         return jacksonObjectMapper().writeValueAsString(serializableState)

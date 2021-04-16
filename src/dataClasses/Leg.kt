@@ -25,7 +25,8 @@ class LegEntity(
 class Leg(
     val legEntity: LegEntity,
     val playerOrder: List<UUID>,
-    val scores: Map<UUID, MutableList<ScoreEntity>>
+    val scores: Map<UUID, MutableList<ScoreEntity>>,
+    val playerFinishedOrder: MutableList<UUID> = mutableListOf(),
 ) {
     fun getCurrentPlayerID(): UUID {
         return playerOrder[legEntity.currentPlayerTurnIndex]
