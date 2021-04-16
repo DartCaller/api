@@ -1,6 +1,7 @@
 package com.dartcaller
 
 import com.dartcaller.dataClasses.Game
+import com.dartcaller.dataClasses.Leg
 import com.dartcaller.routes.ws.Connection
 import io.ktor.http.cio.websocket.*
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
@@ -72,6 +73,13 @@ object ActiveGamesHandlerSingleton {
                 updateSubscribers(game)
                 break
             }
+        }
+    }
+
+    suspend fun addLeg(gameID: String, leg: Leg) {
+        games[gameID]?.let {
+            it.addLeg(leg)
+            updateSubscribers(it)
         }
     }
 }

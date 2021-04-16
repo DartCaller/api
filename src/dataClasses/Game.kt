@@ -32,8 +32,13 @@ class Game (
     legEntities: MutableList<Leg>
 ) {
     val players = playerEntities.map { it.id.toString() to it }.toMap()
-    val legs: List<Leg> = legEntities.sortedBy { it.legEntity.legIndex }
-    val currentLeg: Leg = legs.last()
+    var legs: List<Leg> = legEntities.sortedBy { it.legEntity.legIndex }
+    val currentLeg: Leg
+        get() = legs.last()
+
+    fun addLeg(leg: Leg) {
+        legs = legs.plus(leg).sortedBy { it.legEntity.legIndex }
+    }
 
     fun addThrow(uncheckedScoreString: String) {
         val currentPlayerID = currentLeg.getCurrentPlayerID()
