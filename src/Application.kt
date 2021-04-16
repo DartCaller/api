@@ -34,6 +34,16 @@ fun Application.module(testing: Boolean = false, dataSource: DataSource? = null)
         !testing -> Database()
     }
 
+    install(CORS) {
+        method(HttpMethod.Options)
+        header(HttpHeaders.XForwardedProto)
+        header(HttpHeaders.AccessControlAllowOrigin)
+        allowCredentials = true
+        allowNonSimpleContentTypes = true
+        anyHost()
+        host("localhost")
+    }
+
     install(CallLogging) {
         level = Level.INFO
         filter { call -> call.request.path().startsWith("/") }
