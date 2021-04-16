@@ -2,6 +2,7 @@ package com.dartcaller
 
 import com.dartcaller.routes.ws.WsEvent
 import com.dartcaller.routes.ws.createGame
+import com.dartcaller.routes.ws.joinGame
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.ktor.application.*
@@ -74,6 +75,7 @@ fun Application.module(testing: Boolean = false, dataSource: DataSource? = null)
                 .collect { (data, raw) ->
                     when (data.type) {
                         "CreateGame" -> createGame(mapper.readValue(raw), this)
+                        "JoinGame" -> joinGame(mapper.readValue(raw), this)
                     }
                 }
             } catch (e: Exception) {
