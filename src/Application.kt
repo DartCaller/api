@@ -2,10 +2,13 @@ package com.dartcaller
 
 import com.dartcaller.routes.ws.WsEvent
 import com.dartcaller.routes.ws.createGame
+import com.dartcaller.routes.ws.joinGame
+import com.dartcaller.routes.ws.nextLeg
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.ktor.application.*
 import io.ktor.features.*
+import io.ktor.gson.*
 import io.ktor.http.*
 import io.ktor.http.cio.websocket.*
 import io.ktor.request.*
@@ -17,14 +20,31 @@ import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import org.slf4j.event.Level
+import java.text.DateFormat
 import java.time.Duration
+import javax.sql.DataSource
+
+data class CorrectScore(val playerId: String, val scoreString: String)
 
 fun main(args: Array<String>): Unit = io.ktor.server.netty.EngineMain.main(args)
 
 @Suppress("unused") // Referenced in application.conf
 @kotlin.jvm.JvmOverloads
-fun Application.module(testing: Boolean = false) {
-    Database()
+fun Application.module(testing: Boolean = false, dataSource: DataSource? = null) {
+    when {
+        testing -> Database(dataSource)
+        !testing -> Database()
+    }
+
+    install(CORS) {
+        method(HttpMethod.Options)
+        header(HttpHeaders.XForwardedProto)
+        header(HttpHeaders.AccessControlAllowOrigin)
+        allowCredentials = true
+        allowNonSimpleContentTypes = true
+        anyHost()
+        host("localhost")
+    }
 
     install(CallLogging) {
         level = Level.INFO
@@ -38,6 +58,13 @@ fun Application.module(testing: Boolean = false) {
         masking = false
     }
 
+    install(ContentNegotiation) {
+        gson {
+            setDateFormat(DateFormat.LONG)
+            setPrettyPrinting()
+        }
+    }
+
     routing {
         webSocket("/ws") {
             val mapper = jacksonObjectMapper()
@@ -49,6 +76,8 @@ fun Application.module(testing: Boolean = false) {
                 .collect { (data, raw) ->
                     when (data.type) {
                         "CreateGame" -> createGame(mapper.readValue(raw), this)
+                        "JoinGame" -> joinGame(mapper.readValue(raw), this)
+                        "NextLeg" -> nextLeg(mapper.readValue(raw))
                     }
                 }
             } catch (e: Exception) {
@@ -56,9 +85,26 @@ fun Application.module(testing: Boolean = false) {
             }
         }
 
-        post("/game/throw") {
-            ActiveGamesHandlerSingleton.addScore(call.receiveText())
-            call.respond(HttpStatusCode.OK)
+        post("/board/{boardID}/throw") {
+            call.parameters["boardID"]?.let {
+                ActiveGamesHandlerSingleton.addScore(it, call.receiveText())
+                call.respond(HttpStatusCode.OK)
+            }
+        }
+
+        post("/game/{gameID}/correctScore") {
+            val gameID = call.parameters["gameID"]
+            val data = call.receive<CorrectScore>()
+            if (gameID != null) {
+                try {
+                    ActiveGamesHandlerSingleton.correctScore(gameID, data)
+                    call.respond(HttpStatusCode.OK)
+                } catch (e: IllegalStateException) {
+                    call.respond(HttpStatusCode.Conflict)
+                }
+            } else {
+                call.respond(HttpStatusCode.BadRequest)
+            }
         }
     }
 }

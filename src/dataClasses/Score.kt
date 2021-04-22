@@ -17,32 +17,54 @@ class ScoreEntity(
     val leg: UUID,
     val player: UUID,
     val roundIndex: Int,
-    var scoreString: String
+    scoreString: String
 ) {
-    var score = convertScoreStringToScore(scoreString)
-    var thrownDarts = 1
+    var score = 0
+    var thrownDarts = 0
+    var scoreString = ""
+
+    init {
+        addScore(scoreString)
+    }
 
     companion object {
         fun convertScoreStringToScore(scoreString: String): Int {
-            val dartRingIndicator = scoreString[0]
-            val dartField = scoreString.substring(1).toInt()
-            val multiplier = when (dartRingIndicator) {
-                'T' -> dartField * 3
-                'D' -> dartField * 2
-                else -> dartField
+            val matches = "([SDT](?:\\d{1,3}))".toRegex().findAll(scoreString)
+            var resultScore = 0
+            matches.toList().forEach {
+                val dartRingIndicator = it.value[0]
+                val dartField = it.value.substring(1).toInt()
+                val newScore = when (dartRingIndicator) {
+                    'T' -> dartField * 3
+                    'D' -> dartField * 2
+                    'S' -> dartField
+                    else -> 0
+                }
+                resultScore += newScore
             }
-            return multiplier * dartField
+            return resultScore
         }
     }
 
     fun addScore(newScoreString: String) {
         if (thrownDarts < 3) {
             val newScore = convertScoreStringToScore(newScoreString)
-            score += newScore
-            scoreString += newScoreString
-            thrownDarts += 1
+            if (newScoreString == "-0") {
+                scoreString = "-0".repeat(3)
+                thrownDarts = 3
+                score = 0
+            } else {
+                scoreString += newScoreString
+                thrownDarts += 1
+                score += newScore
+            }
         } else {
             throw IllegalStateException("Cannot add score when 3 darts were already thrown")
         }
+    }
+
+    fun setScore(newScoreString: String) {
+        score = convertScoreStringToScore(newScoreString)
+        scoreString = newScoreString
     }
 }
