@@ -97,9 +97,7 @@ class Game (
         currentLeg.scores[playerUUID]?.let { playerScores ->
             playerScores.lastOrNull()?.let {
                 val remainingScore = remainingScore(playerUUID, (playerScores.size - 1))
-                val matches = "([SDT](?:\\d{1,3}))".toRegex().findAll(scoreString)
-                val lastDart = matches.toList().last().toString()
-                if (isNewScoreAllowed(remainingScore, lastDart)) {
+                if (isNewScoreAllowed(remainingScore, scoreString)) {
                     val oldRemainingScore = remainingScore(playerUUID)
                     it.setScore(scoreString)
                     val newRemainingScore = remainingScore(playerUUID)
@@ -130,11 +128,13 @@ class Game (
     }
 
     private fun isNewScoreAllowed(remainingScore: Int, uncheckedScoreString: String): Boolean {
+        val matches = "([SDT](?:\\d{1,3}))".toRegex().findAll(uncheckedScoreString)
+        val lastDart = matches.toList().last().value
         val potentialNewScore = remainingScore - ScoreEntity.convertScoreStringToScore(uncheckedScoreString)
         return when {
             potentialNewScore < 0 -> false
             potentialNewScore == 1 -> false
-            (potentialNewScore == 0 && uncheckedScoreString[0] != 'D') -> false
+            (potentialNewScore == 0 && lastDart[0] != 'D') -> false
             else -> true
         }
     }
