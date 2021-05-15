@@ -169,6 +169,84 @@ class ApplicationTest {
         }
     }
 
+    @Test
+    fun correctLastScoreOnFinishedPlayer() {
+        withTestApplication({ module(testing = true, dataSource = dataSource) }) {
+            val testApplicationEngine = this
+            handleWebSocketConversation("ws") { incoming, outgoing ->
+                outgoing.send(buildCreateGameEvent(listOf("Dave", "Bob"), "301"))
+                parseIncomingWsJsonMessage<GameState>(incoming)
+                var lastGameState = postScores(testApplicationEngine, incoming, mergeLists(Array(6) { "T20" }, arrayOf("T17", "D25", "D10")))
+
+                val scoreCorrections = listOf(
+                    Triple(lastGameState.playerOrder[0],"T17D25S0", HttpStatusCode.OK)
+                )
+
+                scoreCorrections.forEach {
+                    handleRequest(HttpMethod.Post, "/game/${lastGameState.gameID}/correctScore") {
+                        addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                        setBody(buildScoreCorrectionJson(it.first, it.second))
+                    }.apply {
+                        assertEquals(it.third, response.status())
+                        if (it.third == HttpStatusCode.OK) {
+                            lastGameState = parseIncomingWsJsonMessage(incoming)
+                        }
+                    }
+                }
+
+                assertScores(
+                    lastGameState.scores,
+                    mapOf(
+                        lastGameState.currentPlayer to listOf("301", "T20T20T20"),
+                        lastGameState.playerOrder[0] to listOf("301", "T20T20T20", "T17D25S0")
+                    )
+                )
+                assertEquals(lastGameState.playerFinishedOrder, listOf(), "finished player array should be empty")
+            }
+        }
+    }
+
+    @Test
+    fun correctLastScoreToFinishPlayer() {
+        withTestApplication({ module(testing = true, dataSource = dataSource) }) {
+            val testApplicationEngine = this
+            handleWebSocketConversation("ws") { incoming, outgoing ->
+                outgoing.send(buildCreateGameEvent(listOf("Dave", "Bob"), "301"))
+                parseIncomingWsJsonMessage<GameState>(incoming)
+                var lastGameState = postScores(testApplicationEngine, incoming, mergeLists(Array(6) { "T20" }, arrayOf("T17", "D25", "S0")))
+
+                val scoreCorrections = listOf(
+                    Triple(lastGameState.playerOrder[0],"T17D25D10", HttpStatusCode.OK)
+                )
+
+                scoreCorrections.forEach {
+                    handleRequest(HttpMethod.Post, "/game/${lastGameState.gameID}/correctScore") {
+                        addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                        setBody(buildScoreCorrectionJson(it.first, it.second))
+                    }.apply {
+                        assertEquals(it.third, response.status())
+                        if (it.third == HttpStatusCode.OK) {
+                            lastGameState = parseIncomingWsJsonMessage(incoming)
+                        }
+                    }
+                }
+
+                assertScores(
+                    lastGameState.scores,
+                    mapOf(
+                        lastGameState.currentPlayer to listOf("301", "T20T20T20"),
+                        lastGameState.playerOrder[0] to listOf("301", "T20T20T20", "T17D25D10")
+                    )
+                )
+                assertEquals(
+                    lastGameState.playerFinishedOrder,
+                    listOf(lastGameState.playerOrder[0]),
+                    "finished players array should NOT be empty"
+                )
+            }
+        }
+    }
+
     private fun assertScores(scores: Map<String, List<String>>, expectedScores: Map<String, List<String>>) {
         expectedScores.forEach {
             val playerScore = scores.getValue(it.key)
