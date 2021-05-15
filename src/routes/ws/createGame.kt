@@ -13,7 +13,7 @@ class GameCreateEvent(
 
 suspend fun createGame(event: GameCreateEvent, socket: DefaultWebSocketSession) {
     val game = transaction {
-        val startScore = 501
+        val startScore = if (event.gameMode == "301") 301 else 501
 
         val playerEntities = event.players.map { PlayerController.create(it) }
         val newGameEntity = GameController.create("proto", event.gameMode)
