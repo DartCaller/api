@@ -97,8 +97,18 @@ class Game (
         currentLeg.scores[playerUUID]?.let { playerScores ->
             playerScores.lastOrNull()?.let {
                 val remainingScore = remainingScore(playerUUID, (playerScores.size - 1))
-                if (isNewScoreAllowed(remainingScore, scoreString)) {
+                val matches = "([SDT](?:\\d{1,3}))".toRegex().findAll(scoreString)
+                val lastDart = matches.toList().last().toString()
+                if (isNewScoreAllowed(remainingScore, lastDart)) {
+                    val oldRemainingScore = remainingScore(playerUUID)
                     it.setScore(scoreString)
+                    val newRemainingScore = remainingScore(playerUUID)
+                    if (oldRemainingScore == 0 && newRemainingScore > 0) {
+                        currentLeg.playerFinishedOrder.remove(playerUUID)
+                    }
+                    if (oldRemainingScore > 0 && newRemainingScore == 0) {
+                        currentLeg.playerFinishedOrder.add(playerUUID)
+                    }
                 } else {
                     throw IllegalStateException("Can't update total score to < 0")
                 }
