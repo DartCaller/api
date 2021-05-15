@@ -146,17 +146,7 @@ class ApplicationTest {
                     Triple(lastGameState.currentPlayer,"T20D20S20", HttpStatusCode.OK)
                 )
 
-                scoreCorrections.forEach {
-                    handleRequest(HttpMethod.Post, "/game/${lastGameState.gameID}/correctScore") {
-                        addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-                        setBody(buildScoreCorrectionJson(it.first, it.second))
-                    }.apply {
-                        assertEquals(it.third, response.status())
-                        if (it.third == HttpStatusCode.OK) {
-                            lastGameState = parseIncomingWsJsonMessage(incoming)
-                        }
-                    }
-                }
+                lastGameState = correctScores(testApplicationEngine, lastGameState, scoreCorrections, incoming)
 
                 assertScores(
                     lastGameState.scores,
@@ -182,17 +172,7 @@ class ApplicationTest {
                     Triple(lastGameState.playerOrder[0],"T17D25S0", HttpStatusCode.OK)
                 )
 
-                scoreCorrections.forEach {
-                    handleRequest(HttpMethod.Post, "/game/${lastGameState.gameID}/correctScore") {
-                        addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-                        setBody(buildScoreCorrectionJson(it.first, it.second))
-                    }.apply {
-                        assertEquals(it.third, response.status())
-                        if (it.third == HttpStatusCode.OK) {
-                            lastGameState = parseIncomingWsJsonMessage(incoming)
-                        }
-                    }
-                }
+                lastGameState = correctScores(testApplicationEngine, lastGameState, scoreCorrections, incoming)
 
                 assertScores(
                     lastGameState.scores,
@@ -219,17 +199,7 @@ class ApplicationTest {
                     Triple(lastGameState.playerOrder[0],"T17D25D10", HttpStatusCode.OK)
                 )
 
-                scoreCorrections.forEach {
-                    handleRequest(HttpMethod.Post, "/game/${lastGameState.gameID}/correctScore") {
-                        addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
-                        setBody(buildScoreCorrectionJson(it.first, it.second))
-                    }.apply {
-                        assertEquals(it.third, response.status())
-                        if (it.third == HttpStatusCode.OK) {
-                            lastGameState = parseIncomingWsJsonMessage(incoming)
-                        }
-                    }
-                }
+                lastGameState = correctScores(testApplicationEngine, lastGameState, scoreCorrections, incoming)
 
                 assertScores(
                     lastGameState.scores,
@@ -244,6 +214,27 @@ class ApplicationTest {
                     "finished players array should NOT be empty"
                 )
             }
+        }
+    }
+
+    private suspend fun correctScores(ctx: TestApplicationEngine, lastGameState: GameState, scoreCorrections: List<Triple<String, String, HttpStatusCode?>>, receiveChannel: ReceiveChannel<Frame>): GameState {
+        with(ctx) {
+            if (scoreCorrections.isEmpty()) return lastGameState
+            var newGameState = lastGameState
+            scoreCorrections.forEach {
+                handleRequest(HttpMethod.Post, "/game/${lastGameState.gameID}/correctScore") {
+                    addHeader(HttpHeaders.ContentType, ContentType.Application.Json.toString())
+                    setBody(buildScoreCorrectionJson(it.first, it.second))
+                }.apply {
+                    val responseCode = response.status()
+                    val expectedCode = if (it.third != null) it.third else HttpStatusCode.OK
+                    assertEquals(expectedCode, responseCode)
+                    if (it.third == HttpStatusCode.OK) {
+                        newGameState = parseIncomingWsJsonMessage(receiveChannel)
+                    }
+                }
+            }
+            return newGameState
         }
     }
 
