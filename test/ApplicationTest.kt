@@ -41,7 +41,7 @@ class ApplicationTest {
     }
 
     @Test
-    fun testDartThrowAddition() {
+    fun testDartScoreAddition() {
         withTestApplication({ module(testing = true, dataSource = dataSource) }) {
             val testApplicationEngine = this
             handleWebSocketConversation("ws") { incoming, outgoing ->
