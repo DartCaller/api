@@ -85,38 +85,19 @@ class ApplicationTest {
         withTestApplication({ module(testing = true, dataSource = dataSource) }) {
             val testApplicationEngine = this
             handleWebSocketConversation("ws") { incoming, outgoing ->
-                createGame(listOf("Dave", "Bob"), "501", incoming, outgoing)
-
-                val scores = mergeLists((Array(12) { "T20" }), arrayOf("T20", "T19", "D12", "T20", "T20", "T7", "T20", "T19", "D12"))
-                val lastGameState = postScores(testApplicationEngine, incoming, scores)
-
-                assertScores(
-                    lastGameState.scores,
-                    mapOf(
-                        lastGameState.currentPlayer to listOf("501", "T20T20T20", "T20T20T20", "T20T19D12"),
-                        lastGameState.playerOrder[1] to listOf("501", "T20T20T20", "T20T20T20", "-0-0-0", "T20T19D12")
-                    )
-                )
-                assertEquals(true, lastGameState.legFinished)
-            }
-        }
-    }
-
-    @Test
-    fun gameEnds2() {
-        withTestApplication({ module(testing = true, dataSource = dataSource) }) {
-            val testApplicationEngine = this
-            handleWebSocketConversation("ws") { incoming, outgoing ->
                 createGame(listOf("Dave", "Bob", "Alice", ""), "501", incoming, outgoing)
 
-                val scores = mergeLists(arrayOf("D12"), Array(25) { "T20" }, arrayOf("S15", "T20", "T19", "D12", "T20", "T19", "D12", "T20", "T19", "D12", "D11", "D10"))
+                val scores = mergeLists(
+                    arrayOf("D12"), Array(25) { "T20" },
+                    arrayOf("S15", "T20", "T20", "T7", "T20", "T19", "D12", "T20", "T19", "D12", "D11", "D10", "T20", "T20", "S20", "T20", "T19", "D12")
+                )
                 val lastGameState = postScores(testApplicationEngine, incoming, scores)
 
                 assertScores(
                     lastGameState.scores,
                     mapOf(
                         lastGameState.playerOrder[0] to listOf("501", "D12T20T20", "T20T20T20", "T20T20S15", "D11D10"),
-                        lastGameState.currentPlayer to listOf("501", "T20T20T20", "T20T20T20", "T20T19D12"),
+                        lastGameState.currentPlayer to listOf("501", "T20T20T20", "T20T20T20", "-0-0-0", "-0-0-0", "T20T19D12"),
                         lastGameState.playerOrder[2] to listOf("501", "T20T20T20", "T20T20T20", "T20T19D12"),
                         lastGameState.playerOrder[3] to listOf("501", "T20T20T20", "T20T20T20", "T20T19D12")
                     )
