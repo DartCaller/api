@@ -8,6 +8,7 @@ import io.ktor.http.cio.websocket.*
 import io.ktor.server.testing.*
 import io.zonky.test.db.postgres.embedded.EmbeddedPostgres
 import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.channels.SendChannel
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
@@ -23,9 +24,7 @@ class ApplicationTest {
     fun testGameCreation() {
         withTestApplication({ module(testing = true, dataSource = dataSource) }) {
             handleWebSocketConversation("ws") { incoming, outgoing ->
-                outgoing.send(buildCreateGameEvent(listOf("Dave", "Bob"), "501"))
-
-                val answer = parseIncomingWsJsonMessage<GameState>(incoming)
+                val answer = createGame(listOf("Dave", "Bob"), "501", incoming, outgoing)
 
                 assertEquals("Dave", answer.playerNames[answer.currentPlayer])
                 assertEquals(answer.playerNames.entries.size, 2)
@@ -46,8 +45,7 @@ class ApplicationTest {
         withTestApplication({ module(testing = true, dataSource = dataSource) }) {
             val testApplicationEngine = this
             handleWebSocketConversation("ws") { incoming, outgoing ->
-                outgoing.send(buildCreateGameEvent(listOf("Dave", "Bob"), "501"))
-                parseIncomingWsJsonMessage<GameState>(incoming)
+                createGame(listOf("Dave", "Bob"), "501", incoming, outgoing)
 
                 val lastGameState = postScores(testApplicationEngine, incoming, listOf("T20", "S0"))
 
@@ -67,10 +65,8 @@ class ApplicationTest {
         withTestApplication({ module(testing = true, dataSource = dataSource) }) {
             val testApplicationEngine = this
             handleWebSocketConversation("ws") { incoming, outgoing ->
-                outgoing.send(buildCreateGameEvent(listOf("Dave", "Bob"), "501"))
-                parseIncomingWsJsonMessage<GameState>(incoming)
+                createGame(listOf("Dave", "Bob"), "501", incoming, outgoing)
                 val lastGameState = postScores(testApplicationEngine, incoming, mergeLists(Array(25) { "D20" }, arrayOf("S19", "S1")))
-
 
                 val expectedScore = listOf("501", "D20D20D20", "D20D20D20", "D20D20D20", "D20D20D20", "-0-0-0")
                 assertScores(
@@ -89,8 +85,7 @@ class ApplicationTest {
         withTestApplication({ module(testing = true, dataSource = dataSource) }) {
             val testApplicationEngine = this
             handleWebSocketConversation("ws") { incoming, outgoing ->
-                outgoing.send(buildCreateGameEvent(listOf("Dave", "Bob"), "501"))
-                parseIncomingWsJsonMessage<GameState>(incoming)
+                createGame(listOf("Dave", "Bob"), "501", incoming, outgoing)
 
                 val scores = mergeLists((Array(12) { "T20" }), arrayOf("T20", "T19", "D12", "T20", "T20", "T7", "T20", "T19", "D12"))
                 val lastGameState = postScores(testApplicationEngine, incoming, scores)
@@ -112,8 +107,7 @@ class ApplicationTest {
         withTestApplication({ module(testing = true, dataSource = dataSource) }) {
             val testApplicationEngine = this
             handleWebSocketConversation("ws") { incoming, outgoing ->
-                outgoing.send(buildCreateGameEvent(listOf("Dave", "Bob", "Alice", ""), "501"))
-                parseIncomingWsJsonMessage<GameState>(incoming)
+                createGame(listOf("Dave", "Bob", "Alice", ""), "501", incoming, outgoing)
 
                 val scores = mergeLists(arrayOf("D12"), Array(25) { "T20" }, arrayOf("S15", "T20", "T19", "D12", "T20", "T19", "D12", "T20", "T19", "D12", "D11", "D10"))
                 val lastGameState = postScores(testApplicationEngine, incoming, scores)
@@ -137,8 +131,7 @@ class ApplicationTest {
         withTestApplication({ module(testing = true, dataSource = dataSource) }) {
             val testApplicationEngine = this
             handleWebSocketConversation("ws") { incoming, outgoing ->
-                outgoing.send(buildCreateGameEvent(listOf("Dave", "Bob"), "501"))
-                parseIncomingWsJsonMessage<GameState>(incoming)
+                createGame(listOf("Dave", "Bob"), "501", incoming, outgoing)
                 var lastGameState = postScores(testApplicationEngine, incoming, mergeLists(Array(12) { "T20" }, arrayOf("T20", "T19", "D6")))
 
                 val scoreCorrections = listOf(
@@ -164,8 +157,7 @@ class ApplicationTest {
         withTestApplication({ module(testing = true, dataSource = dataSource) }) {
             val testApplicationEngine = this
             handleWebSocketConversation("ws") { incoming, outgoing ->
-                outgoing.send(buildCreateGameEvent(listOf("Dave", "Bob"), "301"))
-                parseIncomingWsJsonMessage<GameState>(incoming)
+                createGame(listOf("Dave", "Bob"), "301", incoming, outgoing)
                 var lastGameState = postScores(testApplicationEngine, incoming, mergeLists(Array(6) { "T20" }, arrayOf("T17", "D25", "D10")))
 
                 val scoreCorrections = listOf(
@@ -191,8 +183,7 @@ class ApplicationTest {
         withTestApplication({ module(testing = true, dataSource = dataSource) }) {
             val testApplicationEngine = this
             handleWebSocketConversation("ws") { incoming, outgoing ->
-                outgoing.send(buildCreateGameEvent(listOf("Dave", "Bob"), "301"))
-                parseIncomingWsJsonMessage<GameState>(incoming)
+                createGame(listOf("Dave", "Bob"), "301", incoming, outgoing)
                 var lastGameState = postScores(testApplicationEngine, incoming, mergeLists(Array(6) { "T20" }, arrayOf("T17", "D25", "S0")))
 
                 val scoreCorrections = listOf(
@@ -252,6 +243,11 @@ class ApplicationTest {
     private fun buildScoreCorrectionJson(playerId: String, scoreString: String): String {
         return "{ 'playerId': '$playerId', 'scoreString': '$scoreString' }"
             .replace("'", "\"")
+    }
+
+    private suspend fun createGame(players: List<String>, gameMode: String, incoming: ReceiveChannel<Frame>, outgoing: SendChannel<Frame>) : GameState {
+        outgoing.send(buildCreateGameEvent(players, gameMode))
+        return parseIncomingWsJsonMessage(incoming)
     }
 
     private fun buildCreateGameEvent(players: List<String>, gameMode: String) : Frame {
