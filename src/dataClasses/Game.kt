@@ -69,8 +69,7 @@ class Game (
         if (remainingScore(currentPlayerID) == 0) {
             currentLeg.playerFinishedOrder.add(currentPlayerID)
             nextTurn()
-        }
-        if (currentPlayerScores.last().thrownDarts == 3) {
+        } else if (currentPlayerScores.last().thrownDarts == 3) {
             nextTurn()
         }
     }
