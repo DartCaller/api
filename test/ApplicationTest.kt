@@ -103,6 +103,7 @@ class ApplicationTest {
                     )
                 )
                 assertEquals(true, lastGameState.legFinished)
+                assertPlayerFinishOrder(lastGameState, listOf(2,3,0,1))
             }
         }
     }
@@ -218,6 +219,12 @@ class ApplicationTest {
             playerScore.zip(expectedScore).map { (realScore, expectedScore) ->
                 assertEquals(expectedScore, realScore, "$playerScore and $expectedScore don't match for player ${it.key}")
             }
+        }
+    }
+
+    private fun assertPlayerFinishOrder(lastGameState: GameState, expectedFinishOrder: List<Number>) {
+        expectedFinishOrder.forEachIndexed { index, number ->
+            assertEquals(lastGameState.playerFinishedOrder[index], lastGameState.playerOrder[number as Int])
         }
     }
 
