@@ -69,8 +69,7 @@ class Game (
         if (remainingScore(currentPlayerID) == 0) {
             currentLeg.playerFinishedOrder.add(currentPlayerID)
             nextTurn()
-        }
-        if (currentPlayerScores.last().thrownDarts == 3) {
+        } else if (currentPlayerScores.last().thrownDarts == 3) {
             nextTurn()
         }
     }
@@ -99,7 +98,15 @@ class Game (
             playerScores.lastOrNull()?.let {
                 val remainingScore = remainingScore(playerUUID, (playerScores.size - 1))
                 if (isNewScoreAllowed(remainingScore, scoreString)) {
+                    val oldRemainingScore = remainingScore(playerUUID)
                     it.setScore(scoreString)
+                    val newRemainingScore = remainingScore(playerUUID)
+                    if (oldRemainingScore == 0 && newRemainingScore > 0) {
+                        currentLeg.playerFinishedOrder.remove(playerUUID)
+                    }
+                    if (oldRemainingScore > 0 && newRemainingScore == 0) {
+                        currentLeg.playerFinishedOrder.add(playerUUID)
+                    }
                 } else {
                     throw IllegalStateException("Can't update total score to < 0")
                 }
@@ -121,11 +128,13 @@ class Game (
     }
 
     private fun isNewScoreAllowed(remainingScore: Int, uncheckedScoreString: String): Boolean {
+        val matches = "([SDT](?:\\d{1,3}))".toRegex().findAll(uncheckedScoreString)
+        val lastDart = matches.toList().last().value
         val potentialNewScore = remainingScore - ScoreEntity.convertScoreStringToScore(uncheckedScoreString)
         return when {
             potentialNewScore < 0 -> false
             potentialNewScore == 1 -> false
-            (potentialNewScore == 0 && uncheckedScoreString[0] != 'D') -> false
+            (potentialNewScore == 0 && lastDart[0] != 'D') -> false
             else -> true
         }
     }
