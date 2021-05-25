@@ -2,7 +2,7 @@
 [![Tests](https://github.com/DartCaller/api/actions/workflows/main.yml/badge.svg)](https://github.com/DartCaller/api/actions/workflows/main.yml)
 
 # Ktor Backend
-This Repo contain the kotlin backend which acts as a middle man between the dart recognition python server (https://github.com/DartCaller/darts-recognition) and the user facing frontend (https://github.com/DartCaller/api).
+This Repo contain the kotlin backend which acts as a middle man between the dart recognition python server (https://github.com/DartCaller/darts-recognition) and the user facing frontend (https://github.com/DartCaller/web).
 
 
 # Table of Contents
