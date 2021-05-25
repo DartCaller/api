@@ -70,7 +70,7 @@ where DATABASE_URL should look roughly like this
 $ ./gradlew test
 ```
 
-Currently this repo is equipped with [the ktor testing tools](https://ktor.io/docs/testing.html) including [JUnit5](https://junit.org/junit5/)
+Currently this repo is equipped with [the ktor testing tools](https://ktor.io/docs/testing.html) including [JUnit5](https://junit.org/junit5/).
 To quote the official ktor documentation on their testing tools
 > Ktor has a special kind engine TestEngine, that doesn't create a web server, doesn't bind to sockets and doesn't do any real HTTP requests. Instead, it hooks directly into internal mechanisms and processes ApplicationCall directly. This allows for fast test execution at the expense of maybe missing some HTTP processing details. It's perfectly capable of testing application logic, but be sure to set up integration tests as well.
 
@@ -84,7 +84,7 @@ The tests can be found in https://github.com/DartCaller/api/tree/main/test
 
 ### POST: `/board/{boardID}/throw`
 This is the endpoint which is used by the dart recognition python backend https://github.com/DartCaller/darts-recognition to submit scores that were detected on the dartboard. Each dart recognition hardware setup has a so called `boardID` that is used to specify on which board this score has been thrown. If the Frontend passes the same `boardID` during game creation, then this backend knows that any submitted scores using this `boardID` will be added to the Dart Game with the same `boardID`.
-:warning: Currently the Frontend does not send this `boardID` but within here we have hardcoded the same `boardID=proto` for each and every game. This is why we currently don't support multiple parallel running games since one submitted dartscore using the `boardID=proto` would be published to all currently active Dart Games.
+:warning: Currently the Frontend does not send this `boardID` but within here I have hardcoded the same `boardID=proto` for each and every game. This is why this backend currently doesn't support multiple parallel running games since one submitted dartscore using the `boardID=proto` would be published to all currently active Dart Games.
 
 <a name="dartscore_format"/>
 
@@ -113,7 +113,6 @@ The rest of the payload that is required is different for every WS event and spe
 
 #### WS: CreateGame
 ```json
-# Minimal event payload
 { "type": "CreateGame", "players": ["Alice", "Bob", "Cedric"], "gameMode": "301" }
 ```
 This ws event will create a new dart game with the specified players and the given gameMode. Currently the valid `gameModes` are `301` & `501` which specify the leg starting number.
@@ -127,26 +126,25 @@ After successful creation of the new dart game, the websocket client will receiv
   "gameID": "123",
   "legFinished": false,
   "playerNames": {
-    "firstUUID": "Alice",
-    "secondUUID": "Bob",
+    "exampleUUID1": "Alice",
+    "exampleUUID2": "Bob",
   },
-  "currentPlayer": "firstUUID",
+  "currentPlayer": "exampleUUID1",
   "scores": {
-    "firstUUID": ["501", "T20D10S5"],
-    "secondUUID": ["501", "T20D10S5"]
+    "exampleUUID1": ["501", "T20D10S5"],
+    "exampleUUID2": ["501", "T20D10S5"]
   },
-  "playerOrder": ["firstUUID", "secondUUID"],
-  "playerFinishedOrder": ["secondUUID"],
+  "playerOrder": ["exampleUUID1", "exampleUUID2"],
+  "playerFinishedOrder": ["exampleUUID2"],
   "currentRoundIndex": 1
 }
 ```
-The `scores` key follows the [Dart Score Format](#dartscore_format). While the very first element in each players score list is just the starting number of the round, every element after that has between 1 and 3 dartscores directly together depending on how many darts the player has thrown in that round. After a player has completed his turn, the round scorestring string should contain 3 occurrences of the [Dart Score Format](#dartscore_format). If we see a string with less than 3 occurrences it means the player is still throwing his last darts.
+The `scores` key follows the [Dart Score Format](#dartscore_format). While the very first element in each players score list is just the starting number of the round, every element after that has between 1 and 3 dartscores directly together depending on how many darts the player has thrown in that round. After a player has completed his turn, the round scorestring string should contain 3 occurrences of the [Dart Score Format](#dartscore_format). If you see a string with less than 3 occurrences it means the player is still throwing his last darts.
 
 <a name="joinGame"/>
 
 #### WS: JoinGame
 ```json
-# Minimal event payload
 { "type": "JoinGame", "gameID": "{GameUUID}" }
 ```
 When the specified gameID is found within the current active games the client will be added as a subscriber to the game and will receive the newest [network game state](#network_game_state) of the specified dart game from now on.
@@ -155,10 +153,9 @@ When the specified gameID is found within the current active games the client wi
 
 #### WS: NextLeg
 ```json
-# Minimal event payload
 { "type": "NextLeg", "gameID": "{GameUUID}" }
 ```
-When the specified gameID is found within the current active games and all players have finished the current leg (i.e. round) the next leg will be started. In the next leg the player who finished last in the last round will start and the winner of the last round will now go last.
+When the specified gameID is found within the current active games and all players have finished the current game, the next game will be started. In the next game the player who finished last in the last round will start and the winner of the last round will go last.
 
 <a name="lock_with_ink_pen"/>
 
