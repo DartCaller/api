@@ -37,6 +37,8 @@ test {
 dependencies {
     compile "io.ktor:ktor-gson:$ktor_version"
     compile "org.postgresql:postgresql:42.2.2"
+    implementation "io.ktor:ktor-auth:$ktor_version"
+    implementation "io.ktor:ktor-auth-jwt:$ktor_version"
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.0.1"
     implementation "org.jetbrains.exposed:exposed-core:$exposedVersion"
     implementation "org.jetbrains.exposed:exposed-dao:$exposedVersion"

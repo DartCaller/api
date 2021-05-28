@@ -11,7 +11,7 @@ class GameCreateEvent(
     val players: List<String>, val gameMode: String
 ) : WsEvent("GameEvent")
 
-suspend fun createGame(event: GameCreateEvent, socket: DefaultWebSocketSession) {
+suspend fun createGame(event: GameCreateEvent, socket: Connection) {
     val game = transaction {
         val startScore = if (event.gameMode == "301") 301 else 501
 

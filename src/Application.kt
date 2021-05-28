@@ -1,12 +1,13 @@
 package com.dartcaller
 
-import com.dartcaller.routes.ws.WsEvent
-import com.dartcaller.routes.ws.createGame
-import com.dartcaller.routes.ws.joinGame
-import com.dartcaller.routes.ws.nextLeg
+import com.auth0.jwk.UrlJwkProvider
+import com.dartcaller.routes.ws.*
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.typesafe.config.ConfigFactory
 import io.ktor.application.*
+import io.ktor.auth.*
+import io.ktor.auth.jwt.*
 import io.ktor.features.*
 import io.ktor.gson.*
 import io.ktor.http.*
@@ -65,19 +66,39 @@ fun Application.module(testing: Boolean = false, dataSource: DataSource? = null)
         }
     }
 
+    install(Authentication) {
+        jwt {
+            realm = "Ktor auth0"
+            skipWhen { testing }
+            verifier(UrlJwkProvider(ConfigFactory.load().getString("auth0.issuer")))
+            validate { credential ->
+                val payload = credential.payload
+                if (payload.audience.contains(ConfigFactory.load().getString("auth0.audience"))) {
+                    JWTPrincipal(payload)
+                } else {
+                    null
+                }
+            }
+        }
+    }
+
     routing {
         webSocket("/ws") {
             val mapper = jacksonObjectMapper()
+            val connection = Connection(this)
             try {
             incoming.consumeAsFlow()
                 .mapNotNull { it as? Frame.Text }
                 .map { it.readText() }
                 .map { Pair(mapper.readValue<WsEvent>(it), it) }
                 .collect { (data, raw) ->
-                    when (data.type) {
-                        "CreateGame" -> createGame(mapper.readValue(raw), this)
-                        "JoinGame" -> joinGame(mapper.readValue(raw), this)
-                        "NextLeg" -> nextLeg(mapper.readValue(raw))
+                    when (connection.authenticated) {
+                        true -> when (data.type) {
+                            "CreateGame" -> createGame(mapper.readValue(raw), connection)
+                            "JoinGame" -> joinGame(mapper.readValue(raw), connection)
+                            "NextLeg" -> nextLeg(mapper.readValue(raw))
+                        }
+                        false -> authenticateWs(mapper.readValue(raw), connection)
                     }
                 }
             } catch (e: Exception) {
@@ -85,25 +106,26 @@ fun Application.module(testing: Boolean = false, dataSource: DataSource? = null)
             }
         }
 
-        post("/board/{boardID}/throw") {
-            call.parameters["boardID"]?.let {
-                ActiveGamesHandlerSingleton.addScore(it, call.receiveText())
-                call.respond(HttpStatusCode.OK)
-            }
-        }
-
-        post("/game/{gameID}/correctScore") {
-            val gameID = call.parameters["gameID"]
-            val data = call.receive<CorrectScore>()
-            if (gameID != null) {
-                try {
-                    ActiveGamesHandlerSingleton.correctScore(gameID, data)
+            post("/board/{boardID}/throw") {
+                call.parameters["boardID"]?.let {
+                    ActiveGamesHandlerSingleton.addScore(it, call.receiveText())
                     call.respond(HttpStatusCode.OK)
-                } catch (e: IllegalStateException) {
-                    call.respond(HttpStatusCode.Conflict)
                 }
-            } else {
-                call.respond(HttpStatusCode.BadRequest)
+            }
+
+            post("/game/{gameID}/correctScore") {
+                val gameID = call.parameters["gameID"]
+                val data = call.receive<CorrectScore>()
+                if (gameID != null) {
+                    try {
+                        ActiveGamesHandlerSingleton.correctScore(gameID, data)
+                        call.respond(HttpStatusCode.OK)
+                    } catch (e: IllegalStateException) {
+                        call.respond(HttpStatusCode.Conflict)
+                    }
+                } else {
+                    call.respond(HttpStatusCode.BadRequest)
+                }
             }
         }
     }

@@ -15,16 +15,15 @@ object ActiveGamesHandlerSingleton {
         this.games[game.gameEntity.id.toString()] = game
     }
 
-    suspend fun subscribe(socket: DefaultWebSocketSession, gameId: String) {
+    suspend fun subscribe(socket: Connection, gameId: String) {
         if (this.games[gameId] != null) {
             val subscriberList = this.subscribers.getValue(gameId)
-            val connection = Connection(socket)
-            subscriberList.add(connection)
+            subscriberList.add(socket)
             this.subscribers[gameId] = subscriberList
             this.games[gameId]?.let {
                 this.updateSubscribers(it)
             }
-            println("Subscribed socket ${connection.name}")
+            println("Subscribed socket ${socket.name}")
         }
     }
 
