@@ -83,6 +83,10 @@ fun Application.module(testing: Boolean = false, dataSource: DataSource? = null)
     }
 
     routing {
+        get("/") {
+            call.respond(HttpStatusCode.OK)
+        }
+
         webSocket("/ws") {
             val mapper = jacksonObjectMapper()
             val connection = Connection(this)
@@ -137,4 +141,3 @@ fun Application.module(testing: Boolean = false, dataSource: DataSource? = null)
         }
     }
 }
-
