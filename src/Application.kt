@@ -92,7 +92,7 @@ fun Application.module(testing: Boolean = false, dataSource: DataSource? = null)
                 .map { it.readText() }
                 .map { Pair(mapper.readValue<WsEvent>(it), it) }
                 .collect { (data, raw) ->
-                    when (connection.authenticated) {
+                    when (connection.authenticated || testing) {
                         true -> when (data.type) {
                             "CreateGame" -> createGame(mapper.readValue(raw), connection)
                             "JoinGame" -> joinGame(mapper.readValue(raw), connection)
