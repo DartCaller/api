@@ -109,8 +109,12 @@ fun Application.module(testing: Boolean = false, dataSource: DataSource? = null)
         authenticate {
             post("/board/{boardID}/throw") {
                 call.parameters["boardID"]?.let {
-                    ActiveGamesHandlerSingleton.addScore(it, call.receiveText())
-                    call.respond(HttpStatusCode.OK)
+                    try {
+                        ActiveGamesHandlerSingleton.addScore(it, call.receiveText())
+                        call.respond(HttpStatusCode.OK)
+                    } catch (e: IllegalArgumentException) {
+                        call.respond(HttpStatusCode.BadRequest)
+                    }
                 }
             }
 
@@ -123,6 +127,8 @@ fun Application.module(testing: Boolean = false, dataSource: DataSource? = null)
                         call.respond(HttpStatusCode.OK)
                     } catch (e: IllegalStateException) {
                         call.respond(HttpStatusCode.Conflict)
+                    } catch (e: IllegalArgumentException) {
+                        call.respond(HttpStatusCode.BadRequest)
                     }
                 } else {
                     call.respond(HttpStatusCode.BadRequest)
