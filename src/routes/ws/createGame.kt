@@ -11,11 +11,15 @@ class GameCreateEvent(
     val players: List<String>, val gameMode: String
 ) : WsEvent("GameEvent")
 
-suspend fun createGame(event: GameCreateEvent, socket: DefaultWebSocketSession) {
+fun sanitizePlayerName(string: String): String {
+    return "[^a-zA-Z]".toRegex().replace(string, "")
+}
+
+suspend fun createGame(event: GameCreateEvent, socket: Connection) {
     val game = transaction {
         val startScore = if (event.gameMode == "301") 301 else 501
 
-        val playerEntities = event.players.map { PlayerController.create(it) }
+        val playerEntities = event.players.map { PlayerController.create(sanitizePlayerName(it)) }
         val newGameEntity = GameController.create("proto", event.gameMode)
         val newLegEntity = LegController.create(newGameEntity.id, 0, false, 0, 0, startScore)
         playerEntities.forEachIndexed { index, playerEntity ->

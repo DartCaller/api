@@ -8,4 +8,5 @@ class Connection(val session: DefaultWebSocketSession) {
         var lastId = AtomicInteger(0)
     }
     val name = "user${lastId.getAndIncrement()}"
+    var authenticated = false
 }

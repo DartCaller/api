@@ -9,22 +9,21 @@ import java.util.concurrent.CancellationException
 
 object ActiveGamesHandlerSingleton {
     var games = mutableMapOf<String, Game>()
-    var subscribers = mutableMapOf<String, MutableList<Connection>>().withDefault { mutableListOf() }
+    private var subscribers = mutableMapOf<String, MutableList<Connection>>().withDefault { mutableListOf() }
 
     fun add(game: Game) {
         this.games[game.gameEntity.id.toString()] = game
     }
 
-    suspend fun subscribe(socket: DefaultWebSocketSession, gameId: String) {
+    suspend fun subscribe(socket: Connection, gameId: String) {
         if (this.games[gameId] != null) {
             val subscriberList = this.subscribers.getValue(gameId)
-            val connection = Connection(socket)
-            subscriberList.add(connection)
+            subscriberList.add(socket)
             this.subscribers[gameId] = subscriberList
             this.games[gameId]?.let {
                 this.updateSubscribers(it)
             }
-            println("Subscribed socket ${connection.name}")
+            println("Subscribed socket ${socket.name}")
         }
     }
 
@@ -60,6 +59,7 @@ object ActiveGamesHandlerSingleton {
     }
 
     suspend fun addScore(boardID: String, scoreString: String) {
+        ensureValidScore(scoreString)
         games.values.forEach {
             if (it.gameEntity.autoDartReco == boardID) {
                 it.addThrow(scoreString)
@@ -69,6 +69,7 @@ object ActiveGamesHandlerSingleton {
     }
 
     suspend fun correctScore(gameID: String, scoreToCorrect: CorrectScore) {
+        ensureValidScore(scoreToCorrect.scoreString)
         for (game in games.values.iterator()) {
             if (gameID == game.gameEntity.id.toString()) {
                 game.correctScore(scoreToCorrect.playerId, scoreToCorrect.scoreString)
@@ -82,6 +83,12 @@ object ActiveGamesHandlerSingleton {
         games[gameID]?.let {
             it.addLeg(leg)
             updateSubscribers(it)
+        }
+    }
+
+    private fun ensureValidScore(score: String) {
+        if (!"^(([SDT](?:\\d{1,3}))|-0){1,3}$".toRegex().matches(score)) {
+            throw IllegalArgumentException("Score arg does not follow valid form")
         }
     }
 }
