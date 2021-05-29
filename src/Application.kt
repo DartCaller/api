@@ -106,6 +106,7 @@ fun Application.module(testing: Boolean = false, dataSource: DataSource? = null)
             }
         }
 
+        authenticate {
             post("/board/{boardID}/throw") {
                 call.parameters["boardID"]?.let {
                     ActiveGamesHandlerSingleton.addScore(it, call.receiveText())
