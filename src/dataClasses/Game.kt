@@ -46,14 +46,9 @@ class Game (
         val currentPlayerScores = currentLeg.scores[currentPlayerID]!!
 
         val remainingScore = remainingScore(currentLeg.getCurrentPlayerID())
-        val approvedScoreString: String = if (
-            isNewScoreAllowed(remainingScore, uncheckedScoreString)
-        ) uncheckedScoreString else "-0"
+        val approvedScoreString: String = if (isNewScoreAllowed(remainingScore, uncheckedScoreString)) uncheckedScoreString else "-0"
 
-        if (
-            currentPlayerScores.isNotEmpty() &&
-            currentPlayerScores.last().roundIndex == currentLeg.legEntity.currentRoundIndex
-        ) {
+        if (currentPlayerScores.isNotEmpty() && currentPlayerScores.last().roundIndex == currentLeg.legEntity.currentRoundIndex) {
             val currentRoundScore = currentPlayerScores.last()
             currentRoundScore.addScore(approvedScoreString)
         } else {
@@ -138,7 +133,7 @@ class Game (
         }
     }
 
-    fun toJson(): String {
+    fun toJson(prettyPrint: Boolean = false): String {
         val serializableState = transaction {
             GameState(
                 gameEntity.id.toString(),
@@ -157,7 +152,9 @@ class Game (
                 currentLeg.legEntity.currentRoundIndex
             )
         }
-        return jacksonObjectMapper().writeValueAsString(serializableState)
+        val mapper = jacksonObjectMapper()
+        if (prettyPrint) return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(serializableState)
+        return mapper.writeValueAsString(serializableState)
     }
 }
 
