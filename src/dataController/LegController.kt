@@ -3,6 +3,8 @@ package com.dartcaller.dataController
 import com.dartcaller.dataClasses.LegEntity
 import com.dartcaller.dataClasses.Legs
 import org.jetbrains.exposed.sql.insertAndGetId
+import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.update
 import java.util.*
 
 object LegController {
@@ -24,5 +26,22 @@ object LegController {
             currentRoundIndex,
             startScore
         )
+    }
+
+    fun updateCurrentPlayerTurn(id: UUID, currentPlayerTurnIndex: Int, currentRoundIndex: Int) {
+        transaction {
+            Legs.update ({ Legs.id eq id }) {
+                it[this.currentRoundIndex] = currentRoundIndex
+                it[this.currentPlayerTurnIndex] = currentPlayerTurnIndex
+            }
+        }
+    }
+
+    fun changeFinished(id: UUID, finished: Boolean) {
+        transaction {
+            Legs.update ({ Legs.id eq id }) {
+                it[this.finished] = finished
+            }
+        }
     }
 }

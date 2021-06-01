@@ -1,5 +1,6 @@
 package com.dartcaller.dataClasses
 
+import com.dartcaller.dataController.LegController
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -82,7 +83,11 @@ class Game (
             } else {
                 // All players have 0, game has ended
                 currentLeg.legEntity.finished = true
+                LegController.changeFinished(currentLeg.legEntity.id, true)
             }
+        }
+        with(currentLeg.legEntity) {
+            LegController.updateCurrentPlayerTurn(this.id, this.currentPlayerTurnIndex, this.currentRoundIndex)
         }
     }
 
