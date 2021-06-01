@@ -4,7 +4,6 @@ import org.jetbrains.exposed.dao.id.UUIDTable
 import java.util.*
 
 object Scores : UUIDTable() {
-    val game = reference("game", Games)
     val leg = reference("leg", Legs)
     val player = reference("player", Players)
     val roundIndex = integer("roundIndex")
@@ -13,7 +12,6 @@ object Scores : UUIDTable() {
 }
 
 class ScoreEntity(
-    val game: UUID,
     val leg: UUID,
     val player: UUID,
     val roundIndex: Int,

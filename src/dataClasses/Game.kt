@@ -58,7 +58,6 @@ class Game (
             currentRoundScore.addScore(approvedScoreString)
         } else {
             currentPlayerScores.add(ScoreEntity(
-                gameEntity.id,
                 currentLeg.legEntity.id,
                 currentPlayerID,
                 currentLeg.legEntity.currentRoundIndex,
