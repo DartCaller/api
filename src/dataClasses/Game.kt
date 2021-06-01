@@ -157,8 +157,3 @@ class Game (
         return mapper.writeValueAsString(serializableState)
     }
 }
-
-//fun ResultRow.toGenre(): Game = Game(
-//    playerNames = this[Game.playerNames],
-//    title = this[Game.title]
-//)
