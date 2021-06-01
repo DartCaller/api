@@ -21,6 +21,7 @@ This Repo contain the kotlin backend which acts as a middle man between the dart
       - [Network Game State Explained](#network_game_state) 
     - [JoinGame](#joinGame)
     - [NextLeg](#nextLeg)
+- [:file_cabinet: DB Schema](#file_cabinet)
 - [:lock_with_ink_pen: License](#lock_with_ink_pen)
 
 <a name="package"/>
@@ -157,6 +158,11 @@ When the specified gameID is found within the current active games the client wi
 { "type": "NextLeg", "gameID": "{GameUUID}" }
 ```
 When the specified gameID is found within the current active games and all players have finished the current game, the next game will be started. In the next game the player who finished last in the last round will start and the winner of the last round will go last.
+
+<a name="file_cabinet"/>
+
+## :file_cabinet: DB Schema
+![DartBachelor](https://user-images.githubusercontent.com/32591853/120396855-9546e100-c337-11eb-854f-8d6a9a3e0e81.png)
 
 <a name="lock_with_ink_pen"/>
 
