@@ -24,7 +24,7 @@ class Database (dataSource: DataSource?){
             else -> throw IllegalArgumentException("Either a dataSource or a DatabaseUrl is needed")
         }
         transaction {
-            SchemaUtils.create (Games, Players, Scores, Legs, GamePlayers, LegPlayers)
+            SchemaUtils.create (Games, Players, Scores, Legs, LegPlayers)
         }
     }
 

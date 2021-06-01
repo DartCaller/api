@@ -23,7 +23,6 @@ suspend fun createGame(event: GameCreateEvent, socket: Connection) {
         val newGameEntity = GameController.create("proto", event.gameMode)
         val newLegEntity = LegController.create(newGameEntity.id, 0, false, 0, 0, startScore)
         playerEntities.forEachIndexed { index, playerEntity ->
-            GamePlayerController.create(newGameEntity.id, playerEntity.id)
             LegPlayerController.create(newLegEntity.id, playerEntity.id, index)
         }
         val legPlayerOrder = playerEntities.map { it.id }
