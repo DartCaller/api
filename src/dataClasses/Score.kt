@@ -1,10 +1,10 @@
 package com.dartcaller.dataClasses
 
+import com.dartcaller.dataController.ScoreController
 import org.jetbrains.exposed.dao.id.UUIDTable
 import java.util.*
 
 object Scores : UUIDTable() {
-    val game = reference("game", Games)
     val leg = reference("leg", Legs)
     val player = reference("player", Players)
     val roundIndex = integer("roundIndex")
@@ -13,18 +13,28 @@ object Scores : UUIDTable() {
 }
 
 class ScoreEntity(
-    val game: UUID,
     val leg: UUID,
     val player: UUID,
     val roundIndex: Int,
-    scoreString: String
+    scoreString: String,
+    score: Int? = null,
+    id: UUID? = null,
 ) {
-    var score = 0
     var thrownDarts = 0
+    var score = 0
     var scoreString = ""
+    val id: UUID = if (id !== null) id else this.createInDatabase()
 
     init {
-        addScore(scoreString)
+        if (score === null) {
+            // Without a score we initialize this object just as if we just added our first dart
+            addScore(scoreString)
+        } else {
+            // With everything given, we won't change anything and just set the values
+            this.scoreString = scoreString
+            this.score = score
+            setThrownDartCount()
+        }
     }
 
     companion object {
@@ -58,6 +68,7 @@ class ScoreEntity(
                 thrownDarts += 1
                 score += newScore
             }
+            persistToDatabase()
         } else {
             throw IllegalStateException("Cannot add score when 3 darts were already thrown")
         }
@@ -66,5 +77,19 @@ class ScoreEntity(
     fun setScore(newScoreString: String) {
         score = convertScoreStringToScore(newScoreString)
         scoreString = newScoreString
+        persistToDatabase()
+    }
+
+    private fun persistToDatabase() {
+        ScoreController.updateScore(this.id, this.score, this.scoreString)
+    }
+
+    private fun createInDatabase(): UUID {
+        return ScoreController.create(this.leg, this.player, this.roundIndex, this.score, this.scoreString).id
+    }
+
+    private fun setThrownDartCount() {
+        val matches = "([SDT](?:\\d{1,3}))".toRegex().findAll(scoreString)
+        this.thrownDarts = matches.toList().size
     }
 }

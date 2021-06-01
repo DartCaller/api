@@ -1,5 +1,6 @@
 package com.dartcaller.dataClasses
 
+import com.dartcaller.dataController.LegController
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.jetbrains.exposed.dao.id.UUIDTable
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -46,19 +47,13 @@ class Game (
         val currentPlayerScores = currentLeg.scores[currentPlayerID]!!
 
         val remainingScore = remainingScore(currentLeg.getCurrentPlayerID())
-        val approvedScoreString: String = if (
-            isNewScoreAllowed(remainingScore, uncheckedScoreString)
-        ) uncheckedScoreString else "-0"
+        val approvedScoreString: String = if (isNewScoreAllowed(remainingScore, uncheckedScoreString)) uncheckedScoreString else "-0"
 
-        if (
-            currentPlayerScores.isNotEmpty() &&
-            currentPlayerScores.last().roundIndex == currentLeg.legEntity.currentRoundIndex
-        ) {
+        if (currentPlayerScores.isNotEmpty() && currentPlayerScores.last().roundIndex == currentLeg.legEntity.currentRoundIndex) {
             val currentRoundScore = currentPlayerScores.last()
             currentRoundScore.addScore(approvedScoreString)
         } else {
             currentPlayerScores.add(ScoreEntity(
-                gameEntity.id,
                 currentLeg.legEntity.id,
                 currentPlayerID,
                 currentLeg.legEntity.currentRoundIndex,
@@ -88,7 +83,11 @@ class Game (
             } else {
                 // All players have 0, game has ended
                 currentLeg.legEntity.finished = true
+                LegController.changeFinished(currentLeg.legEntity.id, true)
             }
+        }
+        with(currentLeg.legEntity) {
+            LegController.updateCurrentPlayerTurn(this.id, this.currentPlayerTurnIndex, this.currentRoundIndex)
         }
     }
 
@@ -139,7 +138,7 @@ class Game (
         }
     }
 
-    fun toJson(): String {
+    fun toJson(prettyPrint: Boolean = false): String {
         val serializableState = transaction {
             GameState(
                 gameEntity.id.toString(),
@@ -158,11 +157,8 @@ class Game (
                 currentLeg.legEntity.currentRoundIndex
             )
         }
-        return jacksonObjectMapper().writeValueAsString(serializableState)
+        val mapper = jacksonObjectMapper()
+        if (prettyPrint) return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(serializableState)
+        return mapper.writeValueAsString(serializableState)
     }
 }
-
-//fun ResultRow.toGenre(): Game = Game(
-//    playerNames = this[Game.playerNames],
-//    title = this[Game.title]
-//)
