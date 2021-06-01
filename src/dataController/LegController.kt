@@ -3,6 +3,7 @@ package com.dartcaller.dataController
 import com.dartcaller.dataClasses.LegEntity
 import com.dartcaller.dataClasses.Legs
 import org.jetbrains.exposed.sql.insertAndGetId
+import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import java.util.*
@@ -26,6 +27,22 @@ object LegController {
             currentRoundIndex,
             startScore
         )
+    }
+
+    fun getByGame(gameID: UUID): List<LegEntity> {
+        return transaction {
+            Legs.select { Legs.game eq gameID }.map {
+                LegEntity(
+                    it[Legs.id].value,
+                    it[Legs.game].value,
+                    it[Legs.legIndex],
+                    it[Legs.finished],
+                    it[Legs.currentPlayerTurnIndex],
+                    it[Legs.currentRoundIndex],
+                    it[Legs.startScore]
+                )
+            }
+        }
     }
 
     fun updateCurrentPlayerTurn(id: UUID, currentPlayerTurnIndex: Int, currentRoundIndex: Int) {

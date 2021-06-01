@@ -2,7 +2,9 @@ package com.dartcaller.dataController
 
 import com.dartcaller.dataClasses.ScoreEntity
 import com.dartcaller.dataClasses.Scores
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.insertAndGetId
+import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.jetbrains.exposed.sql.update
 import java.util.*
@@ -28,5 +30,19 @@ object ScoreController {
                 it[this.scoreString] = scoreString
             }
         }
+    }
+
+    fun getByLegAndPlayer(legID: UUID, playerID: UUID): MutableList<ScoreEntity> {
+        val scores = Scores.select { Scores.leg eq legID and (Scores.player eq playerID) }.toList().map {
+            ScoreEntity(
+                legID,
+                playerID,
+                it[Scores.roundIndex],
+                it[Scores.scoreString],
+                it[Scores.score],
+            )
+        }.toMutableList()
+        scores.sortBy { it.roundIndex }
+        return scores
     }
 }
