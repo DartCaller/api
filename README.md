@@ -76,7 +76,8 @@ Currently this repo is equipped with [the ktor testing tools](https://ktor.io/do
 To quote the official ktor documentation on their testing tools
 > Ktor has a special kind engine TestEngine, that doesn't create a web server, doesn't bind to sockets and doesn't do any real HTTP requests. Instead, it hooks directly into internal mechanisms and processes ApplicationCall directly. This allows for fast test execution at the expense of maybe missing some HTTP processing details. It's perfectly capable of testing application logic, but be sure to set up integration tests as well.
 
-The tests can be found in https://github.com/DartCaller/api/tree/main/test
+The tests can be found in https://github.com/DartCaller/api/tree/main/test.
+The tests are part of the CI / CD pipeline and are run on each push to the repository as it can be seen here https://github.com/DartCaller/api/actions.
 
 <a name="telephone_receiver"/>
 
