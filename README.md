@@ -110,7 +110,7 @@ This is the endpoint that is used by the dart recognition python backend https:/
 
 :warning: Currently, the frontend does not send the `boardID`, but for the moment, I have hardcoded the same `boardID=proto` (short for prototype) for every game. This is why this backend currently doesn't support multiple parallel running games since one submitted dart score using the `boardID=proto` would be published to all active Dart Games.
 
-All that is needed to call this route is the `boardID` as a query parameter and in the request body as plain text the dart score in the below specified format.
+All that is needed to call this route is the `boardID` as a query parameter, and in the request body as plain text, the dart score in the below-specified format.
 
 Method|Query Param|Example Request Body|Body Type|
 ------|-----------|--------------------|---------|
@@ -131,7 +131,7 @@ For a more detailed explanation with graphic and more examples, please follow th
 This route is used by the fronend to change a player's past score.
 Just specify the playerID and the new score he should have, and his last thrown score will be set to this.
 
-:warning: This action cannot be performed when the player has not finished his turn yet. He hast to first finish the turn, and then you can correct his score.
+:warning: This action cannot be performed when the player has not finished his turn yet. He has to finish the turn first, and then you can correct his score.
 
 
 Method|Query Param|Example Request Body                                     |Body Type|
